@@ -72,54 +72,32 @@ generate
 
 
     for (x=0; x<(DATA_SIZE+71)/72; x=x+1) begin
-
-         FIFO36E1 #(
-            .ALMOST_EMPTY_OFFSET(13'h0080),    // Sets the almost empty threshold
-            .ALMOST_FULL_OFFSET(13'h0 + (2**ADDR_BITS-7)),     // Sets almost full threshold
-            .DATA_WIDTH(72),                    // Sets data width to 4-72
-            .DO_REG(1),                        // Enable output register (1-0) Must be 1 if EN_SYN = FALSE
-            .EN_ECC_READ("FALSE"),             // Enable ECC decoder, FALSE, TRUE
-            .EN_ECC_WRITE("FALSE"),            // Enable ECC encoder, FALSE, TRUE
-            .EN_SYN("FALSE"),                  // Specifies FIFO as Asynchronous (FALSE) or Synchronous (TRUE)
-            .FIFO_MODE("FIFO36_72"),              // Sets mode to "FIFO36" or "FIFO36_72" 
-            .FIRST_WORD_FALL_THROUGH("TRUE"), // Sets the FIFO FWFT to FALSE, TRUE
-            .INIT(72'h000000000000000000),     // Initial values on output port
-            .SIM_DEVICE("7SERIES"),            // Must be set to "7SERIES" for simulation behavior
-            .SRVAL(72'h000000000000000000)     // Set/Reset value for output port
-         )
-         FIFO36E1_inst (
-            // ECC Signals: 1-bit (each) output: Error Correction Circuitry ports
-            .DBITERR(),             // 1-bit output: Double bit error status
-            .ECCPARITY(),         // 8-bit output: Generated error correction parity
-            .SBITERR(),             // 1-bit output: Single bit error status
-            // Read Data: 64-bit (each) output: Read output data
-            .DO(out_data[x*72 +: 64]),                       // 64-bit output: Data output
-            .DOP(out_data[x*72+64 +: 8]),                     // 8-bit output: Parity data output
-            // Status: 1-bit (each) output: Flags and other FIFO status outputs
-            .ALMOSTEMPTY(out_almost_empty[x]),     // 1-bit output: Almost empty flag
-            .ALMOSTFULL(in_almost_full[x]),       // 1-bit output: Almost full flag
-            .EMPTY(out_empty[x]),                 // 1-bit output: Empty flag
-            .FULL(in_full[x]),                   // 1-bit output: Full flag
-            .RDCOUNT(),             // 13-bit output: Read count
-            .RDERR(),                 // 1-bit output: Read error
-            .WRCOUNT(),             // 13-bit output: Write count
-            .WRERR(),                 // 1-bit output: Write error
-            // ECC Signals: 1-bit (each) input: Error Correction Circuitry ports
-            .INJECTDBITERR(), // 1-bit input: Inject a double bit error input
-            .INJECTSBITERR(),
-            // Read Control Signals: 1-bit (each) input: Read clock, enable and reset input signals
-            .RDCLK(clk),                 // 1-bit input: Read clock
-            .RDEN(m_axis_tready & rd_ok),                   // 1-bit input: Read enable
-            .REGCE(1'b1),                 // 1-bit input: Clock enable
-            .RST(rst),                     // 1-bit input: Reset
-            .RSTREG(rst),               // 1-bit input: Output register set/reset
-            // Write Control Signals: 1-bit (each) input: Write clock and enable input signals
-            .WRCLK(clk),                 // 1-bit input: Rising edge write clock.
-            .WREN(s_axis_tvalid & rd_ok & ~in_almost_full[x]),                   // 1-bit input: Write enable
-            // Write Data: 64-bit (each) input: Write input data
-            .DI(in_data[x*72 +: 64]),                       // 64-bit input: Data input
-            .DIP(in_data[x*72+64 +: 8])                      // 8-bit input: Parity input
-         );
+         FIFO_DUALCLOCK_MACRO  #(
+          .ALMOST_EMPTY_OFFSET(13'h0080),    // Sets the almost empty threshold
+          .ALMOST_FULL_OFFSET(13'h0 + (2**ADDR_BITS-7)),     // Sets almost full threshold
+          .DATA_WIDTH(72),                    // Sets data width to 4-72
+          .DEVICE("7SERIES"),  // Target device: "7SERIES" 
+          .FIFO_SIZE ("36Kb"), // Target BRAM: "18Kb" or "36Kb" 
+          .FIRST_WORD_FALL_THROUGH ("TRUE") // Sets the FIFO FWFT to "TRUE" or "FALSE" 
+       ) FIFO_DUALCLOCK_MACRO_inst (
+          .ALMOSTEMPTY(out_almost_empty[x]),     // 1-bit output: Almost empty flag
+          .ALMOSTFULL(in_almost_full[x]),       // 1-bit output: Almost full flag
+          .DO(out_data[x*72 +: 72]),                   // Output data, width defined by DATA_WIDTH parameter
+          .EMPTY(out_empty[x]),                 // 1-bit output: Empty flag
+          .FULL(in_full[x]),                   // 1-bit output: Full flag
+          .RDCOUNT(),         // Output read count, width determined by FIFO depth
+          .RDERR(),             // 1-bit output read error
+          .WRCOUNT(),         // Output write count, width determined by FIFO depth
+          .WRERR(),             // 1-bit output write error
+          .DI(in_data[x*72 +: 72]),                   // Input data, width defined by DATA_WIDTH parameter
+          .RDCLK(clk),             // 1-bit input read clock
+          .RDEN(m_axis_tready & rd_ok),               // 1-bit input read enable
+          .RST(rst),                 // 1-bit input reset
+          .WRCLK(clk),             // 1-bit input write clock
+          .WREN(s_axis_tvalid & rd_ok & ~in_almost_full[x])                // 1-bit input write enable
+       );
+        
+         
     end
 
 
@@ -140,54 +118,33 @@ generate
     assign m_axis_tvalid = out_empty==0 ? 1 : 0;
 
     for (x=0; x<(DATA_SIZE+35)/36; x=x+1) begin
+    
+        FIFO_DUALCLOCK_MACRO  #(
+              .ALMOST_EMPTY_OFFSET(13'h0080),    // Sets the almost empty threshold
+              .ALMOST_FULL_OFFSET(13'h0 + (2**ADDR_BITS-7)),     // Sets almost full threshold
+              .DATA_WIDTH(36),                    // Sets data width to 4-72
+              .DEVICE("7SERIES"),  // Target device: "7SERIES" 
+              .FIFO_SIZE ("36Kb"), // Target BRAM: "18Kb" or "36Kb" 
+              .FIRST_WORD_FALL_THROUGH ("TRUE") // Sets the FIFO FWFT to "TRUE" or "FALSE" 
+           ) FIFO_DUALCLOCK_MACRO_inst (
+              .ALMOSTEMPTY(out_almost_empty[x]),     // 1-bit output: Almost empty flag
+              .ALMOSTFULL(in_almost_full[x]),       // 1-bit output: Almost full flag
+              .DO(out_data[x*36 +: 36]),                   // Output data, width defined by DATA_WIDTH parameter
+              .EMPTY(out_empty[x]),                 // 1-bit output: Empty flag
+              .FULL(in_full[x]),                   // 1-bit output: Full flag
+              .RDCOUNT(),         // Output read count, width determined by FIFO depth
+              .RDERR(),             // 1-bit output read error
+              .WRCOUNT(),         // Output write count, width determined by FIFO depth
+              .WRERR(),             // 1-bit output write error
+              .DI(in_data[x*36 +: 36]),                   // Input data, width defined by DATA_WIDTH parameter
+              .RDCLK(clk),             // 1-bit input read clock
+              .RDEN(m_axis_tready & rd_ok),               // 1-bit input read enable
+              .RST(rst),                 // 1-bit input reset
+              .WRCLK(clk),             // 1-bit input write clock
+              .WREN(s_axis_tvalid & rd_ok & ~in_almost_full[x])                // 1-bit input write enable
+           );
 
-         FIFO36E1 #(
-            .ALMOST_EMPTY_OFFSET(13'h0080),    // Sets the almost empty threshold
-            .ALMOST_FULL_OFFSET(13'h0 + (2**ADDR_BITS-7)),     // Sets almost full threshold
-            .DATA_WIDTH(36),                    // Sets data width to 4-36
-            .DO_REG(1),                        // Enable output register (1-0) Must be 1 if EN_SYN = FALSE
-            .EN_ECC_READ("FALSE"),             // Enable ECC decoder, FALSE, TRUE
-            .EN_ECC_WRITE("FALSE"),            // Enable ECC encoder, FALSE, TRUE
-            .EN_SYN("FALSE"),                  // Specifies FIFO as Asynchronous (FALSE) or Synchronous (TRUE)
-            .FIFO_MODE("FIFO36"),              // Sets mode to "FIFO36" or "FIFO36_36" 
-            .FIRST_WORD_FALL_THROUGH("TRUE"), // Sets the FIFO FWFT to FALSE, TRUE
-            .INIT(36'h000000000000000000),     // Initial values on output port
-            .SIM_DEVICE("7SERIES"),            // Must be set to "7SERIES" for simulation behavior
-            .SRVAL(36'h000000000000000000)     // Set/Reset value for output port
-         )
-         FIFO36E1_inst (
-            // ECC Signals: 1-bit (each) output: Error Correction Circuitry ports
-            .DBITERR(),             // 1-bit output: Double bit error status
-            .ECCPARITY(),         // 8-bit output: Generated error correction parity
-            .SBITERR(),             // 1-bit output: Single bit error status
-            // Read Data: 64-bit (each) output: Read output data
-            .DO(out_data[x*36 +: 32]),                       // 64-bit output: Data output
-            .DOP(out_data[x*36+32 +: 4]),                     // 8-bit output: Parity data output
-            // Status: 1-bit (each) output: Flags and other FIFO status outputs
-            .ALMOSTEMPTY(out_almost_empty[x]),     // 1-bit output: Almost empty flag
-            .ALMOSTFULL(in_almost_full[x]),       // 1-bit output: Almost full flag
-            .EMPTY(out_empty[x]),                 // 1-bit output: Empty flag
-            .FULL(in_full[x]),                   // 1-bit output: Full flag
-            .RDCOUNT(),             // 13-bit output: Read count
-            .RDERR(),                 // 1-bit output: Read error
-            .WRCOUNT(),             // 13-bit output: Write count
-            .WRERR(),                 // 1-bit output: Write error
-            // ECC Signals: 1-bit (each) input: Error Correction Circuitry ports
-            .INJECTDBITERR(), // 1-bit input: Inject a double bit error input
-            .INJECTSBITERR(),
-            // Read Control Signals: 1-bit (each) input: Read clock, enable and reset input signals
-            .RDCLK(clk),                 // 1-bit input: Read clock
-            .RDEN(m_axis_tready & rd_ok),                   // 1-bit input: Read enable
-            .REGCE(1'b1),                 // 1-bit input: Clock enable
-            .RST(rst),                     // 1-bit input: Reset
-            .RSTREG(rst),               // 1-bit input: Output register set/reset
-            // Write Control Signals: 1-bit (each) input: Write clock and enable input signals
-            .WRCLK(clk),                 // 1-bit input: Rising edge write clock.
-            .WREN(s_axis_tvalid & rd_ok & ~in_almost_full[x]),                   // 1-bit input: Write enable
-            // Write Data: 64-bit (each) input: Write input data
-            .DI(in_data[x*36 +: 32]),                       // 64-bit input: Data input
-            .DIP(in_data[x*36+32 +: 4])                      // 8-bit input: Parity input
-         );
+        
     end
 
 
@@ -209,53 +166,30 @@ generate
 
     for (x=0; x<(DATA_SIZE+17)/18; x=x+1) begin
 
-         FIFO36E1 #(
-            .ALMOST_EMPTY_OFFSET(13'h0080),    // Sets the almost empty threshold
-            .ALMOST_FULL_OFFSET(13'h0 + (2**ADDR_BITS-7)),     // Sets almost full threshold
-            .DATA_WIDTH(18),                    // Sets data width to 4-18
-            .DO_REG(1),                        // Enable output register (1-0) Must be 1 if EN_SYN = FALSE
-            .EN_ECC_READ("FALSE"),             // Enable ECC decoder, FALSE, TRUE
-            .EN_ECC_WRITE("FALSE"),            // Enable ECC encoder, FALSE, TRUE
-            .EN_SYN("FALSE"),                  // Specifies FIFO as Asynchronous (FALSE) or Synchronous (TRUE)
-            .FIFO_MODE("FIFO18"),              // Sets mode to "FIFO18" or "FIFO18_18" 
-            .FIRST_WORD_FALL_THROUGH("TRUE"), // Sets the FIFO FWFT to FALSE, TRUE
-            .INIT(18'h000000000000000000),     // Initial values on output port
-            .SIM_DEVICE("7SERIES"),            // Must be set to "7SERIES" for simulation behavior
-            .SRVAL(18'h000000000000000000)     // Set/Reset value for output port
-         )
-         FIFO36E1_inst (
-            // ECC Signals: 1-bit (each) output: Error Correction Circuitry ports
-            .DBITERR(),             // 1-bit output: Double bit error status
-            .ECCPARITY(),         // 8-bit output: Generated error correction parity
-            .SBITERR(),             // 1-bit output: Single bit error status
-            // Read Data: 64-bit (each) output: Read output data
-            .DO(out_data[x*18 +: 16]),                       // 64-bit output: Data output
-            .DOP(out_data[x*18+16 +: 2]),                     // 8-bit output: Parity data output
-            // Status: 1-bit (each) output: Flags and other FIFO status outputs
-            .ALMOSTEMPTY(out_almost_empty[x]),     // 1-bit output: Almost empty flag
-            .ALMOSTFULL(in_almost_full[x]),       // 1-bit output: Almost full flag
-            .EMPTY(out_empty[x]),                 // 1-bit output: Empty flag
-            .FULL(in_full[x]),                   // 1-bit output: Full flag
-            .RDCOUNT(),             // 13-bit output: Read count
-            .RDERR(),                 // 1-bit output: Read error
-            .WRCOUNT(),             // 13-bit output: Write count
-            .WRERR(),                 // 1-bit output: Write error
-            // ECC Signals: 1-bit (each) input: Error Correction Circuitry ports
-            .INJECTDBITERR(), // 1-bit input: Inject a double bit error input
-            .INJECTSBITERR(),
-            // Read Control Signals: 1-bit (each) input: Read clock, enable and reset input signals
-            .RDCLK(clk),                 // 1-bit input: Read clock
-            .RDEN(m_axis_tready & rd_ok),                   // 1-bit input: Read enable
-            .REGCE(1'b1),                 // 1-bit input: Clock enable
-            .RST(rst),                     // 1-bit input: Reset
-            .RSTREG(rst),               // 1-bit input: Output register set/reset
-            // Write Control Signals: 1-bit (each) input: Write clock and enable input signals
-            .WRCLK(clk),                 // 1-bit input: Rising edge write clock.
-            .WREN(s_axis_tvalid & rd_ok & ~in_almost_full[x]),                   // 1-bit input: Write enable
-            // Write Data: 64-bit (each) input: Write input data
-            .DI(in_data[x*18 +: 16]),                       // 64-bit input: Data input
-            .DIP(in_data[x*18+16 +: 2])                      // 8-bit input: Parity input
-         );
+        FIFO_DUALCLOCK_MACRO  #(
+              .ALMOST_EMPTY_OFFSET(13'h0080),    // Sets the almost empty threshold
+              .ALMOST_FULL_OFFSET(13'h0 + (2**ADDR_BITS-7)),     // Sets almost full threshold
+              .DATA_WIDTH(18),                    // Sets data width to 4-72
+              .DEVICE("7SERIES"),  // Target device: "7SERIES" 
+              .FIFO_SIZE ("36Kb"), // Target BRAM: "18Kb" or "36Kb" 
+              .FIRST_WORD_FALL_THROUGH ("TRUE") // Sets the FIFO FWFT to "TRUE" or "FALSE" 
+           ) FIFO_DUALCLOCK_MACRO_inst (
+              .ALMOSTEMPTY(out_almost_empty[x]),     // 1-bit output: Almost empty flag
+              .ALMOSTFULL(in_almost_full[x]),       // 1-bit output: Almost full flag
+              .DO(out_data[x*18 +: 18]),                   // Output data, width defined by DATA_WIDTH parameter
+              .EMPTY(out_empty[x]),                 // 1-bit output: Empty flag
+              .FULL(in_full[x]),                   // 1-bit output: Full flag
+              .RDCOUNT(),         // Output read count, width determined by FIFO depth
+              .RDERR(),             // 1-bit output read error
+              .WRCOUNT(),         // Output write count, width determined by FIFO depth
+              .WRERR(),             // 1-bit output write error
+              .DI(in_data[x*18 +: 18]),                   // Input data, width defined by DATA_WIDTH parameter
+              .RDCLK(clk),             // 1-bit input read clock
+              .RDEN(m_axis_tready & rd_ok),               // 1-bit input read enable
+              .RST(rst),                 // 1-bit input reset
+              .WRCLK(clk),             // 1-bit input write clock
+              .WREN(s_axis_tvalid & rd_ok & ~in_almost_full[x])                // 1-bit input write enable
+           );
     end
 
 

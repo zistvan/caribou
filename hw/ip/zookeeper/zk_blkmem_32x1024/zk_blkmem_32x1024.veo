@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2015 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2018 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,8 +46,8 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:blk_mem_gen:8.2
-// IP Revision: 2
+// IP VLNV: xilinx.com:ip:blk_mem_gen:8.4
+// IP Revision: 1
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
@@ -57,7 +57,7 @@
 zk_blkmem_32x1024 your_instance_name (
   .clka(clka),    // input wire clka
   .wea(wea),      // input wire [0 : 0] wea
-  .addra(addra),  // input wire [11 : 0] addra
+  .addra(addra),  // input wire [9 : 0] addra
   .dina(dina),    // input wire [47 : 0] dina
   .douta(douta)  // output wire [47 : 0] douta
 );

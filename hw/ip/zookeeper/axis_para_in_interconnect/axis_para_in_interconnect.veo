@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2015 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2018 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -47,7 +47,7 @@
 // DO NOT MODIFY THIS FILE.
 
 // IP VLNV: xilinx.com:ip:axis_interconnect:1.1
-// IP Revision: 4
+// IP Revision: 15
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
@@ -55,30 +55,29 @@
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
 axis_para_in_interconnect your_instance_name (
-  .ACLK(ACLK),                                          // input wire ACLK
-  .ARESETN(ARESETN),                                    // input wire ARESETN
-  .S00_AXIS_ACLK(S00_AXIS_ACLK),                        // input wire S00_AXIS_ACLK
-  .S01_AXIS_ACLK(S01_AXIS_ACLK),                        // input wire S01_AXIS_ACLK
-  .S00_AXIS_ARESETN(S00_AXIS_ARESETN),                  // input wire S00_AXIS_ARESETN
-  .S01_AXIS_ARESETN(S01_AXIS_ARESETN),                  // input wire S01_AXIS_ARESETN
-  .S00_AXIS_TVALID(S00_AXIS_TVALID),                    // input wire S00_AXIS_TVALID
-  .S01_AXIS_TVALID(S01_AXIS_TVALID),                    // input wire S01_AXIS_TVALID
-  .S00_AXIS_TREADY(S00_AXIS_TREADY),                    // output wire S00_AXIS_TREADY
-  .S01_AXIS_TREADY(S01_AXIS_TREADY),                    // output wire S01_AXIS_TREADY
-  .S00_AXIS_TDATA(S00_AXIS_TDATA),                      // input wire [63 : 0] S00_AXIS_TDATA
-  .S01_AXIS_TDATA(S01_AXIS_TDATA),                      // input wire [63 : 0] S01_AXIS_TDATA
-  .S00_AXIS_TLAST(S00_AXIS_TLAST),                      // input wire S00_AXIS_TLAST
-  .S01_AXIS_TLAST(S01_AXIS_TLAST),                      // input wire S01_AXIS_TLAST
-  .M00_AXIS_ACLK(M00_AXIS_ACLK),                        // input wire M00_AXIS_ACLK
-  .M00_AXIS_ARESETN(M00_AXIS_ARESETN),                  // input wire M00_AXIS_ARESETN
-  .M00_AXIS_TVALID(M00_AXIS_TVALID),                    // output wire M00_AXIS_TVALID
-  .M00_AXIS_TREADY(M00_AXIS_TREADY),                    // input wire M00_AXIS_TREADY
-  .M00_AXIS_TDATA(M00_AXIS_TDATA),                      // output wire [63 : 0] M00_AXIS_TDATA
-  .M00_AXIS_TLAST(M00_AXIS_TLAST),                      // output wire M00_AXIS_TLAST
-  .S00_ARB_REQ_SUPPRESS(S00_ARB_REQ_SUPPRESS),          // input wire S00_ARB_REQ_SUPPRESS
-  .S01_ARB_REQ_SUPPRESS(S01_ARB_REQ_SUPPRESS),          // input wire S01_ARB_REQ_SUPPRESS
-  .M00_SPARSE_TKEEP_REMOVED(M00_SPARSE_TKEEP_REMOVED),  // output wire M00_SPARSE_TKEEP_REMOVED
-  .M00_FIFO_DATA_COUNT(M00_FIFO_DATA_COUNT)            // output wire [31 : 0] M00_FIFO_DATA_COUNT
+  .ACLK(ACLK),                                  // input wire ACLK
+  .ARESETN(ARESETN),                            // input wire ARESETN
+  .S00_AXIS_ACLK(S00_AXIS_ACLK),                // input wire S00_AXIS_ACLK
+  .S01_AXIS_ACLK(S01_AXIS_ACLK),                // input wire S01_AXIS_ACLK
+  .S00_AXIS_ARESETN(S00_AXIS_ARESETN),          // input wire S00_AXIS_ARESETN
+  .S01_AXIS_ARESETN(S01_AXIS_ARESETN),          // input wire S01_AXIS_ARESETN
+  .S00_AXIS_TVALID(S00_AXIS_TVALID),            // input wire S00_AXIS_TVALID
+  .S01_AXIS_TVALID(S01_AXIS_TVALID),            // input wire S01_AXIS_TVALID
+  .S00_AXIS_TREADY(S00_AXIS_TREADY),            // output wire S00_AXIS_TREADY
+  .S01_AXIS_TREADY(S01_AXIS_TREADY),            // output wire S01_AXIS_TREADY
+  .S00_AXIS_TDATA(S00_AXIS_TDATA),              // input wire [63 : 0] S00_AXIS_TDATA
+  .S01_AXIS_TDATA(S01_AXIS_TDATA),              // input wire [63 : 0] S01_AXIS_TDATA
+  .S00_AXIS_TLAST(S00_AXIS_TLAST),              // input wire S00_AXIS_TLAST
+  .S01_AXIS_TLAST(S01_AXIS_TLAST),              // input wire S01_AXIS_TLAST
+  .M00_AXIS_ACLK(M00_AXIS_ACLK),                // input wire M00_AXIS_ACLK
+  .M00_AXIS_ARESETN(M00_AXIS_ARESETN),          // input wire M00_AXIS_ARESETN
+  .M00_AXIS_TVALID(M00_AXIS_TVALID),            // output wire M00_AXIS_TVALID
+  .M00_AXIS_TREADY(M00_AXIS_TREADY),            // input wire M00_AXIS_TREADY
+  .M00_AXIS_TDATA(M00_AXIS_TDATA),              // output wire [63 : 0] M00_AXIS_TDATA
+  .M00_AXIS_TLAST(M00_AXIS_TLAST),              // output wire M00_AXIS_TLAST
+  .S00_ARB_REQ_SUPPRESS(S00_ARB_REQ_SUPPRESS),  // input wire S00_ARB_REQ_SUPPRESS
+  .S01_ARB_REQ_SUPPRESS(S01_ARB_REQ_SUPPRESS),  // input wire S01_ARB_REQ_SUPPRESS
+  .M00_FIFO_DATA_COUNT(M00_FIFO_DATA_COUNT)    // output wire [31 : 0] M00_FIFO_DATA_COUNT
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 

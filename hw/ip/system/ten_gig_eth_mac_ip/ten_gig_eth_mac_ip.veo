@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2015 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2018 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,8 +46,8 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:ten_gig_eth_mac:14.0
-// IP Revision: 0
+// IP VLNV: xilinx.com:ip:ten_gig_eth_mac:15.1
+// IP Revision: 6
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
@@ -79,7 +79,7 @@ ten_gig_eth_mac_ip your_instance_name (
   .pause_req(pause_req),                              // input wire pause_req
   .tx_configuration_vector(tx_configuration_vector),  // input wire [79 : 0] tx_configuration_vector
   .rx_configuration_vector(rx_configuration_vector),  // input wire [79 : 0] rx_configuration_vector
-  .status_vector(status_vector),                      // output wire [1 : 0] status_vector
+  .status_vector(status_vector),                      // output wire [2 : 0] status_vector
   .tx_dcm_locked(tx_dcm_locked),                      // input wire tx_dcm_locked
   .xgmii_txd(xgmii_txd),                              // output wire [63 : 0] xgmii_txd
   .xgmii_txc(xgmii_txc),                              // output wire [7 : 0] xgmii_txc

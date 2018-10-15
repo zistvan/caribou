@@ -62,7 +62,7 @@ module topmost_zooknukv_para (
   input         button_north,
   input         button_east,
   input         button_west,
-  
+  /*
     output                         xphy1_txp,
     output                         xphy1_txn,
     input                          xphy1_rxp,
@@ -77,7 +77,7 @@ module topmost_zooknukv_para (
     output                         xphy3_txn,
     input                          xphy3_rxp,
     input                          xphy3_rxn,
-    
+    */
     output[3:0] sfp_tx_disable,
     
       // Connection to SODIMM-A
@@ -395,7 +395,7 @@ vc709_10g_interface n10g_interface_inst
 .xphy0_rxp(xphy0_rxp),
 .xphy0_rxn(xphy0_rxn),
 
-
+/*
 .xphy1_txp(xphy1_txp),
 .xphy1_txn(xphy1_txn),
 .xphy1_rxp(xphy1_rxp),
@@ -412,7 +412,7 @@ vc709_10g_interface n10g_interface_inst
 .xphy3_rxp(xphy3_rxp),
 .xphy3_rxn(xphy3_rxn),
 
-
+*/
 
 //master
 .axis_i_0_tdata(AXI_S_Stream_TDATA),
@@ -861,8 +861,8 @@ wire           upd_s_axis_write_tvalid_x;
 wire          upd_s_axis_write_tready_x;
 
 
-//muu_TopWrapper multiuser_kvs_top  (
-zookeeper_tcp_top_parallel_nkv nkv_TopWrapper (
+muu_TopWrapper multiuser_kvs_top  (
+//zookeeper_tcp_top_parallel_nkv nkv_TopWrapper (
   .m_axis_open_connection_TVALID(axis_open_connection_TVALID),
   .m_axis_open_connection_TDATA(axis_open_connection_TDATA),
   .m_axis_open_connection_TREADY(axis_open_connection_TREADY),
@@ -972,44 +972,7 @@ zookeeper_tcp_top_parallel_nkv nkv_TopWrapper (
 
   .bmap_wrcmd_data(bmap_wrcmd_data),
   .bmap_wrcmd_valid(bmap_wrcmd_valid),
-  .bmap_wrcmd_ready(bmap_wrcmd_ready),
-
-  /*
-  .para0_in_tvalid(AXI_S2_Stream_TVALID),
-  .para0_in_tready(AXI_S2_Stream_TREADY),
-  .para0_in_tdata(AXI_S2_Stream_TDATA),
-  .para0_in_tlast(AXI_S2_Stream_TLAST),
-  
-  .para0_out_tvalid(AXI_M2_Stream_TVALID),
-  .para0_out_tready(AXI_M2_Stream_TREADY),
-  .para0_out_tdata(AXI_M2_Stream_TDATA),
-  .para0_out_tlast(AXI_M2_Stream_TLAST),
-   
-  .para1_in_tvalid(AXI_S3_Stream_TVALID),
-  .para1_in_tready(AXI_S3_Stream_TREADY),
-  .para1_in_tdata(AXI_S3_Stream_TDATA),
-  .para1_in_tlast(AXI_S3_Stream_TLAST),
-  
-  .para1_out_tvalid(AXI_M3_Stream_TVALID),
-  .para1_out_tready(AXI_M3_Stream_TREADY),
-  .para1_out_tdata(AXI_M3_Stream_TDATA),
-  .para1_out_tlast(AXI_M3_Stream_TLAST),
-
-
-  .para2_in_tvalid(AXI_S4_Stream_TVALID),
-  .para2_in_tready(AXI_S4_Stream_TREADY),
-  .para2_in_tdata(AXI_S4_Stream_TDATA),
-  .para2_in_tlast(AXI_S4_Stream_TLAST),
-  
-  .para2_out_tvalid(AXI_M4_Stream_TVALID),
-  .para2_out_tready(AXI_M4_Stream_TREADY),
-  .para2_out_tdata(AXI_M4_Stream_TDATA),
-  .para2_out_tlast(AXI_M4_Stream_TLAST),
-   */
-   
-  .hadretransmit({toeTX_m_axis_read_tdata[54:0],toeTX_m_axis_read_tkeep[7:0],toeTX_m_axis_read_tvalid}),
-  //.toedebug({1'b0, AXI_S_Stream_TLAST, AXI_S_Stream_TREADY, AXI_S_Stream_TVALID, toeTX_s_axis_write_cmd_tdata[59:32], toeTX_s_axis_read_cmd_tdata[63:32], 1'b0,toeTX_s_axis_write_cmd_tvalid, toeTX_s_axis_read_cmd_tvalid,toeTX_s_axis_write_tvalid ,toeTX_s_axis_write_tdata[59:0],toeTX_s_axis_write_tkeep[7:0]}),
-  .toedebug(debug_out),
+  .bmap_wrcmd_ready(bmap_wrcmd_ready), 
   
   .aclk(axi_clk),                                                          // input wire aclk
   .aresetn(aresetn)                                                    // input wire aresetn
@@ -1029,20 +992,20 @@ reg c0_init_calib_complete_r1, c0_init_calib_complete_r2;
 reg c1_init_calib_complete_r1, c1_init_calib_complete_r2;
 
 
-//- 212MHz differential clock for 1866Mbps DDR3 controller
-   wire sys_clk_212_i;  
+//- 233MHz differential clock for 1866Mbps DDR3 controller
+   wire sys_clk_233_i;  
    
    IBUFGDS #(
      .DIFF_TERM    ("TRUE"),
      .IBUF_LOW_PWR ("FALSE")
-   ) clk_212_ibufg (
+   ) clk_233_ibufg (
      .I            (sys_clk_p),
      .IB           (sys_clk_n),
-     .O            (sys_clk_212_i)
+     .O            (sys_clk_233_i)
    );
 
 wire sys_rst_i;
-IBUF rst_212_bufg
+IBUF rst_233_bufg
 (
     .I  (sys_rst),
     .O  (sys_rst_i)
@@ -1170,7 +1133,7 @@ nkv_ddr_mem_inf  mem_inf_inst
 .clk156_25(axi_clk),
 //.reset233_n(reset233_n), //active low reset signal for 233MHz clock domain
 .reset156_25_n(ddr3_calib_complete),
-.clk212(sys_clk_212_i),
+.sys_clk(sys_clk_233_i),
 .clk200(clk_ref_200),
 .sys_rst(sys_rst_i),
 

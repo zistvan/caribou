@@ -36,7 +36,7 @@
 // Revision 0.01 - File Created
 // Additional Comments:
 // 
-//////////////////////////////////////////////////////////////////////////////////
+//////////////////f////////////////////////////////////////////////////////////////
 
 
 module nkv_ddr_mem_inf
@@ -44,8 +44,8 @@ module nkv_ddr_mem_inf
 input wire clk156_25,
 //input reset233_n, //active low reset signal for 233MHz clock domain
 input wire  reset156_25_n,
-input wire  clk212,
 input wire  clk200,
+input wire  sys_clk,
 input wire  sys_rst,
 
 //ddr3 pins
@@ -679,7 +679,7 @@ ddr3_dual_inf ddr3_dual_inst
 
  // Inputs
   // Single-ended system clock
-    .c0_sys_clk_i(clk212),
+    .c0_sys_clk_i(sys_clk),
   // Single-ended iodelayctrl clk (reference clock)
     .clk_ref_i(clk200),
     .device_temp_i(12'd0),
@@ -705,7 +705,7 @@ ddr3_dual_inf ddr3_dual_inst
 
   // Inputs
   // Single-ended system clock
-    .c1_sys_clk_i(clk212),
+    .c1_sys_clk_i(sys_clk),
   // System reset - Default polarity of sys_rst pin is Active Low.
   // System reset polarity will change based on the option 
   // selected in GUI.

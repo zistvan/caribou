@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2015 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2018 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,8 +46,8 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:ten_gig_eth_pcs_pma:5.0
-// IP Revision: 0
+// IP VLNV: xilinx.com:ip:ten_gig_eth_pcs_pma:6.0
+// IP Revision: 13
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
@@ -55,13 +55,14 @@
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
 ten_gig_eth_pcs_pma_ip your_instance_name (
-  .clk156(clk156),                              // input wire clk156
+  .rxrecclk_out(rxrecclk_out),                  // output wire rxrecclk_out
+  .coreclk(coreclk),                            // input wire coreclk
   .dclk(dclk),                                  // input wire dclk
   .txusrclk(txusrclk),                          // input wire txusrclk
   .txusrclk2(txusrclk2),                        // input wire txusrclk2
   .areset(areset),                              // input wire areset
-  .txclk322(txclk322),                          // output wire txclk322
-  .areset_clk156(areset_clk156),                // input wire areset_clk156
+  .txoutclk(txoutclk),                          // output wire txoutclk
+  .areset_coreclk(areset_coreclk),              // input wire areset_coreclk
   .gttxreset(gttxreset),                        // input wire gttxreset
   .gtrxreset(gtrxreset),                        // input wire gtrxreset
   .txuserrdy(txuserrdy),                        // input wire txuserrdy

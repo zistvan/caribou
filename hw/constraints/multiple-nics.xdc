@@ -280,7 +280,7 @@ set_clock_groups -name async_xgemac_clk50 -asynchronous \
    -group [get_clocks clk50]
    
 ####contraints from DRAM MEM inf
-create_clock -period 4.708 -name sys_clk_212 [get_ports sys_clk_p]
+create_clock -period 4.285 -name sys_clk_233 [get_ports sys_clk_p]
 
 set_property VCCAUX_IO DONTCARE [get_ports {sys_clk_p}]
 set_property IOSTANDARD DIFF_SSTL15 [get_ports {sys_clk_p}]
@@ -297,7 +297,7 @@ set_property IOSTANDARD LVCMOS18 [get_ports {sys_rst}]
 set_property PACKAGE_PIN AV40 [get_ports {sys_rst}]
 
 # REMOVED WITH DDR3
-set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets sys_clk_212_i]
+set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets sys_clk_233_i]
 
 set_clock_groups -name clk156_pll_i -asynchronous -group [get_clocks clk_pll_i] -group [get_clocks clk156]
 set_clock_groups -name clk156_pll_i_1 -asynchronous -group [get_clocks clk_pll_i_1] -group [get_clocks clk156]
