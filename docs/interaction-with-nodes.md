@@ -53,9 +53,9 @@ Note: the operations in square brackets have buggy/incomplete behavior and are n
 
 ## Request format definitions
 
-All requests sent to Multes start with the magic number 0xFFFF and have to be zero-padded to 8byte multiples.
+### KVS Operations
 
-### Replicated 
+All requests sent to Multes start with the magic number 0xFFFF and have to be zero-padded to 8byte multiples.
 
 From the client's perspective the only important operation is "replicated set" that will replicate the given key and value to all nodes. (Other operations and their code can be found in zk_control_CentralSM.vhdl.)
 
@@ -71,30 +71,11 @@ These operations are formatted as follows:
 Legend: 
 
 * x [1B] = reserved to encode node id
-* C [1B] = opcode of the operation: 0x01 for SET
+* C [1B] = opcode: 0x01 for replicated SET, node-local command code: 0x00 for GET, 0x1F for SET-LOCAL, 0xFF for FLUSH
 * P [2B] = payload (key + value) size in 64bit words. E.g. 4=4*64bit
 * E [8B] = reserved to encode epoch, zxid
 * K [64B] = key (can be only 64bit long)
-* L [2B] = length of value (including these two bytes) in bytes
-* V [variable] = value (if no value is needed for the operation, stop at K)
-
-
-### Node-local
-
-To perform operations that are local to the node, we use a similar format of the packets as above, but with extra information in bytes 4-7 (see nukv_ht_write_v2.v for opcodes):
-
-	FFFF00CCPPPPkk00
-	0000000000000000
-	KKKKKKKKKKKKKKKK
-	LLLLVVVVVVVVVVVV
-	...
-	VVVVVVVVVVVVVVVV
-
-* P [2B] = payload (key + value) size in 64bit words. E.g. 4=4*64bit
-* CC [1B] = node-local command code: 0x00 for GET, 0x1F for SET-LOCAL, 0xFF for FLUSH
-* k [1B] = length of key in 64 bit words (can be only 01).
-* K [64B] = key
-* L [2B] = length of value (including these two bytes) in bytes -- maximum is 1KB
+* L [2B] = length of value (including these two bytes) in bytes -- maximum is 1KB by default, but can be changed in code
 * V [variable] = value (if no value is needed for the operation, stop at K)
 
 In-code examples of these operations can be found in the Go client in /src/
