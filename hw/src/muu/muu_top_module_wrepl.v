@@ -27,11 +27,10 @@ module muu_Top_Module_Repl #(
     parameter KEY_WIDTH = 64,
     parameter HASHTABLE_MEM_SIZE = 20,
     parameter VALUESTORE_MEM_SIZE = 24,
-    parameter SUPPORT_SCANS = 0,
-    parameter DECOMPRESS_ENGINES = 0,
-    parameter EXTRA_PRED_EVALS = 7,
+    parameter FILTER_PRED_CNT = 8,
+    parameter FILTER_REGEX_PARA = 0,
 	parameter IS_SIM = 0,
-    parameter USER_BITS = 4
+    parameter USER_BITS = 3
 )(
 	// Clock
 	input wire         clk,
@@ -146,6 +145,10 @@ parameter EXT_META_WIDTH = NET_META_WIDTH+OPS_META_WIDTH+USER_BITS;//163
 
 parameter DOUBLEHASH_WIDTH = 64;
 parameter HASH_WIDTH = 32;
+
+parameter SUPPORT_SCANS = 0;
+
+parameter FILTER_ENABLED_NUM = FILTER_REGEX_PARA + FILTER_PRED_CNT;
 
 wire [31:0] rdcmd_data;
 wire        rdcmd_valid;
@@ -306,7 +309,6 @@ wire value_b_ready;
 
 wire[VALUE_WIDTH-1:0] value_read_data;
 wire value_read_valid;
-wire value_read_last;
 wire value_read_ready;
 
 
@@ -350,13 +352,6 @@ wire pe_cmd_ready;
 wire pe_cmd_valid;
 wire[15:0] pe_cmd_data;
 wire[95:0] pe_cmd_meta;
-
-
-wire [511:0] value_frompred_data;
-wire        value_frompred_ready;
-wire        value_frompred_valid;
-wire        value_frompred_drop;
-wire        value_frompred_last;
 
 wire [511:0] value_frompipe_data;
 wire        value_frompipe_ready;
@@ -601,7 +596,8 @@ wire [3:0] reqsplit_debug;
 
 muu_RequestSplit #(
     .NET_META_WIDTH(NET_META_WIDTH),
-    .OPS_META_WIDTH(OPS_META_WIDTH)
+    .OPS_META_WIDTH(OPS_META_WIDTH),
+    .USER_BITS(USER_BITS)
     ) splitter (
 	.clk(clk),
 	.rst(rst),
@@ -1353,46 +1349,11 @@ nukv_Malloc #(
 );
 
 assign scan_mode_on = 0;      
-/*
-always @(posedge clk) begin
-	if (SUPPORT_SCANS==1) begin
 
-		if (rst) begin
-			scan_mode_on <= 0;		
-			scan_readsprocessed <= 0;
-		end
-		else begin
-			if (scan_mode_on==0 && scan_reading==1) begin
-				scan_mode_on <= 1;
-				scan_readsprocessed <= 0;
-			end
-
-			if (scan_mode_on==1 && value_frompred_b_valid==1 && value_frompred_b_ready==1) begin
-				scan_readsprocessed <= scan_readsprocessed +1;
-			end
-
-			if (scan_mode_on==1 && scan_reading==0 && scan_readsprocessed==scan_readsissued && scan_readsissued > 0) begin
-				scan_mode_on <= 0;
-			end
-		end
-
-
-	end else begin
-		scan_mode_on <= 0;
-	end
-end
-
-assign scan_ready = scan_rdcmd_ready;
-assign scan_rdcmd_valid = scan_valid;
-assign scan_rdcmd_data = {scan_cnt, scan_addr};
-*/
 assign b_rdcmd_data ={24'b000000000000000100000001, b_rdcmd_cnt[7:0], 4'b0000, b_rdcmd_data_short[27:0]};
 assign b_wrcmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, b_wrcmd_data_short[27:0]};
 assign p_rdcmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, p_rdcmd_data_short[27:0]};
 assign p_wrcmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, p_wrcmd_data_short[27:0]};
-
-
-
 
 assign ht_rd_cmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, 4'b0000, rdcmd_data[23:0]};
 assign ht_rd_cmd_valid = rdcmd_valid;
@@ -1533,7 +1494,7 @@ muu_Value_Set #(
 
 	.pe_valid(predconf_valid),
 	.pe_scan(predconf_scan),
-	.pe_ready(predconf_ready & predevalpipe_ready),
+	.pe_ready(predconf_ready),
 	.pe_data(predconf_data),
 
 	.scan_start(scan_kickoff),
@@ -1548,6 +1509,22 @@ muu_Value_Set #(
     .repl_conf_size(replconf_size),
     .repl_conf_ready(replconf_ready)
 
+);
+
+nukv_fifogen #(
+    .DATA_SIZE(MEMORY_WIDTH+NET_META_WIDTH+1),
+    .ADDR_BITS(7)
+) fifo_output_conf_pe (
+    .clk(clk),
+    .rst(rst),
+    
+    .s_axis_tdata({predconf_data, predconf_scan}),
+    .s_axis_tvalid(predconf_valid),
+    .s_axis_tready(predconf_ready),
+    
+    .m_axis_tdata(predconf_b_fulldata),
+    .m_axis_tvalid(predconf_b_valid),
+    .m_axis_tready(predconf_b_ready)
 );
 
 muu_DataRepeater data_replicator (
@@ -1677,250 +1654,98 @@ nukv_fifogen #(
     .m_axis_tready(fromset_b_ready)
 );
 
-
-/*
-nukv_fifogen #(
-    .DATA_SIZE(48+NET_META_WIDTH+1),
-    .ADDR_BITS(7)
-) fifo_output_conf_pe (
-    .clk(clk),
-    .rst(rst),
-    
-    .s_axis_tdata({predconf_data, predconf_scan}),
-    .s_axis_tvalid(predconf_valid & predconf_ready & predevalpipe_ready),
-    .s_axis_tready(predconf_ready),
-    
-    .m_axis_tdata(predconf_b_fulldata),
-    .m_axis_tvalid(predconf_b_valid),
-    .m_axis_tready(predconf_b_ready)
-);
-
-assign predconf_b_scan = predconf_b_fulldata[0];
-assign predconf_b_data = {predconf_b_fulldata[1+NET_META_WIDTH +: 48],predconf_b_fulldata[1 +: NET_META_WIDTH]};
-
-wire pred_eval_error;
-
-
-
-*/
-
-
-/* 
-
-        wire[511:0] decompress_in_data;
-        wire[DECOMPRESS_ENGINES-1:0] decompress_in_valid;
-        wire[DECOMPRESS_ENGINES-1:0] decompress_in_ready;
-
-        wire[511:0] decompress_out_data[0:DECOMPRESS_ENGINES-1];
-        wire[DECOMPRESS_ENGINES-1:0] decompress_out_valid;
-        wire[DECOMPRESS_ENGINES-1:0] decompress_out_ready;
-        wire[DECOMPRESS_ENGINES-1:0] decompress_out_last;
-
-        wire[511:0] decompress_comb_data[0:DECOMPRESS_ENGINES-1];
-        wire[DECOMPRESS_ENGINES-1:0] decompress_comb_valid;
-        wire[DECOMPRESS_ENGINES-1:0] decompress_comb_last;
-
-        reg[5:0] decompress_in_rrid;
-        reg[5:0] decompress_out_rrid;
-
-        reg rst_buf;
-
-        assign value_read_ready_buf = decompress_in_ready[decompress_in_rrid];
-        assign decompress_in_data = value_read_data_buf;
-
-        always @(posedge clk) begin
-            rst_buf <= rst;
-
-            if (rst) begin
-               decompress_in_rrid <=0;
-                
-            end
-            else begin
-                if (value_read_valid_buf==1 && value_read_ready_buf==1) begin
-                    decompress_in_rrid <= decompress_in_rrid+1;
-                    if (decompress_in_rrid==DECOMPRESS_ENGINES-1) begin
-                        decompress_in_rrid <= 0;
-                    end
-                end
-            end
-        end
-    
-
-
-        genvar xx;
-        generate    
-        for (xx=0; xx<DECOMPRESS_ENGINES; xx=xx+1)
-        begin : decompression
-    
-          assign decompress_in_valid[xx +: 1] = xx==decompress_in_rrid ?  value_read_valid_buf : 0;
-          
-    
-            nukv_Decompress decompress_unit (
-                   .clk(clk),
-                   .rst(rst),
-    
-                    .input_valid(decompress_in_valid[xx +: 1]),
-                    .input_ready(decompress_in_ready[xx +: 1]),
-                    .input_data(decompress_in_data),
-                    .input_last(1),
-    
-                    .output_valid(decompress_out_valid[xx +: 1]),
-                    .output_ready(decompress_out_ready[xx +: 1]),
-                    .output_data(decompress_out_data[xx]),
-                    .output_last(decompress_out_last[xx +: 1])
-                );        
-
-            nukv_fifogen #(
-                .DATA_SIZE(513),
-                .ADDR_BITS(8)
-            ) fifo_after_decompress (
-                .clk(clk),
-                .rst(rst_buf),
-                
-                .s_axis_tdata({decompress_out_last[xx +: 1], decompress_out_data[xx]}),
-                .s_axis_tvalid(decompress_out_valid[xx +: 1]),
-                .s_axis_tready(decompress_out_ready[xx +: 1]),
-                
-                .m_axis_tdata({decompress_comb_last[xx +: 1 ], decompress_comb_data[xx]}),
-                .m_axis_tvalid(decompress_comb_valid[xx +: 1]),
-                .m_axis_tready(xx==decompress_out_rrid ?  value_read_ready : 0)
-            );
-        end
-        endgenerate
-
-        always @(posedge clk) begin
-            if (rst) begin
-               decompress_out_rrid <=0;
-                
-            end
-            else begin
-                if (value_read_ready==1 && value_read_valid==1 && value_read_last==1) begin
-                    decompress_out_rrid <= decompress_out_rrid+1;
-                    if (decompress_out_rrid==DECOMPRESS_ENGINES-1) begin
-                        decompress_out_rrid <= 0;
-                    end
-                end
-            end
-        end
-
-        assign value_read_data = decompress_comb_data[decompress_out_rrid];
-        assign value_read_valid = decompress_comb_valid[decompress_out_rrid +: 1];
-        assign value_read_last = decompress_comb_last[decompress_out_rrid +: 1];
-*/
-
-        assign value_read_ready_buf = value_read_ready;
-        assign value_read_valid = value_read_valid_buf;
-        assign value_read_data = value_read_data_buf;
-        assign value_read_last = 0;
-       
-
-
-        wire cond_ready;
-
-/*
-
-
-nukv_Predicate_Eval_Pipeline 
-        #(.SUPPORT_SCANS(SUPPORT_SCANS),
-          .PIPE_DEPTH(EXTRA_PRED_EVALS) 
-        ) pred_eval_pipe (
-
-    .clk(clk),
-    .rst(rst),
-    
-    .pred_data({predconf_data[NET_META_WIDTH+MEMORY_WIDTH-1 : NET_META_WIDTH+48], predconf_data[NET_META_WIDTH-1:0]}),
-    .pred_valid(predconf_valid & predconf_ready & predevalpipe_ready),
-    .pred_ready(predevalpipe_ready),
-    .pred_scan((SUPPORT_SCANS==1) ? predconf_scan : 0),
-
-    .value_data(value_read_data),
-    .value_last(value_read_last), 
-    .value_drop(0),
-    .value_valid(value_read_valid),
-    .value_ready(value_read_ready),
-
-    .output_valid(value_frompipe_valid),
-    .output_ready(value_frompipe_ready),
-    .output_data(value_frompipe_data),
-    .output_last(value_frompipe_last),
-    .output_drop(value_frompipe_drop),
-
-    .scan_on_outside(scan_mode_on)
-
-        );
-
-
-
-
-nukv_Predicate_Eval #(.SUPPORT_SCANS(SUPPORT_SCANS))  
-	pred_eval
-    (
-	.clk(clk),
-	.rst(rst),
-
-	.pred_data(predconf_b_data),
-	.pred_valid(predconf_b_valid),
-	.pred_ready(predconf_b_ready),
-	.pred_scan((SUPPORT_SCANS==1) ? predconf_b_scan : 0),
-
-	.value_data(value_frompipe_data),
-	.value_last(value_frompipe_last), 
-	.value_drop(value_frompipe_drop),
-	.value_valid(value_frompipe_valid),
-	.value_ready(value_frompipe_ready),
-
-	.output_valid(value_frompred_valid),
-	.output_ready(value_frompred_ready),
-	.output_data(value_frompred_data),
-	.output_last(value_frompred_last),
-	.output_drop(value_frompred_drop),
-
-	.cmd_valid(pe_cmd_valid),
-	.cmd_length(pe_cmd_data),
-    .cmd_meta(pe_cmd_meta),
-	.cmd_ready(pe_cmd_ready), 
-
-	.scan_on_outside(scan_mode_on),
-	
-	.error_input(pred_eval_error)
-);
-
-nukv_fifogen #(
-    .DATA_SIZE(MEMORY_WIDTH),
-    .ADDR_BITS(4)
-) fifo_value_from_pe (
-    .clk(clk),
-    .rst(rst),
-    
-    .s_axis_tdata(value_frompred_data),
-    .s_axis_tvalid(value_frompred_valid),
-    .s_axis_tready(value_frompred_ready),
-    
-    .m_axis_tdata(value_frompred_b_data),
-    .m_axis_tvalid(value_frompred_b_valid),
-    .m_axis_tready(value_frompred_b_ready)
-);
-
 wire cond_valid;
 wire cond_ready;
 wire cond_drop;
 
-nukv_fifogen #(
-    .DATA_SIZE(1),
-    .ADDR_BITS(8)
-) fifo_decision_from_pe (
-    .clk(clk),
-    .rst(rst),
-    
-    .s_axis_tdata(value_frompred_drop),
-    .s_axis_tvalid(value_frompred_last & value_frompred_valid & value_frompred_ready),
-    .s_axis_tready(),    
-    .m_axis_tdata(cond_drop),
-    .m_axis_tvalid(cond_valid),
-    .m_axis_tready(cond_ready)
-);
-*/
+generate
+    if (FILTER_ENABLED_NUM==0) begin
+        //no filters in the project, cuts out whole part
+        assign cond_valid = predconf_b_valid;
+        assign cond_drop = 0;
+        assign predconf_b_ready = cond_ready;
 
+        assign value_read_ready_buf = value_read_ready;
+        assign value_read_valid = value_read_valid_buf;
+        assign value_read_data = value_read_data_buf;        
+
+    end
+    else begin
+        //need to wire in filters
+
+        nukv_Predicate_Eval_Pipeline_v2 
+                #(.SUPPORT_SCANS(SUPPORT_SCANS),
+                  .PIPE_DEPTH(FILTER_PRED_CNT),
+                  .META_WIDTH(EXT_META_WIDTH) 
+                ) pred_eval_pipe (
+
+            .clk(clk),
+            .rst(rst),
+            
+            .pred_data(predconf_b_fulldata[NET_META_WIDTH+MEMORY_WIDTH : 1]),
+            .pred_valid(predconf_b_valid),
+            .pred_ready(predconf_b_ready),
+            .pred_scan((SUPPORT_SCANS==1) ? predconf_b_fulldata[0] : 0),
+
+            .value_data(value_read_data_buf),
+            .value_last(0), 
+            .value_drop(0),
+            .value_valid(value_read_valid_buf),
+            .value_ready(value_read_ready_buf),
+
+            .output_valid(value_frompipe_valid),
+            .output_ready(value_frompipe_ready),
+            .output_data(value_frompipe_data),
+            .output_last(value_frompipe_last),
+            .output_drop(value_frompipe_drop),
+
+            .scan_on_outside(scan_mode_on),
+
+            .cmd_valid(pe_cmd_valid),
+            .cmd_length(pe_cmd_data),
+            .cmd_meta(pe_cmd_meta),
+            .cmd_ready(pe_cmd_ready)
+
+                );
+
+
+        nukv_fifogen #(
+            .DATA_SIZE(MEMORY_WIDTH),
+            .ADDR_BITS(7)
+        ) fifo_value_from_pe (
+            .clk(clk),
+            .rst(rst),
+            
+            .s_axis_tdata(value_frompipe_data),
+            .s_axis_tvalid(value_frompipe_valid),
+            .s_axis_tready(value_frompipe_ready),
+            
+            .m_axis_tdata(value_frompred_b_data),
+            .m_axis_tvalid(value_frompred_b_valid),
+            .m_axis_tready(value_frompred_b_ready)
+        );
+
+        nukv_fifogen #(
+            .DATA_SIZE(1),
+            .ADDR_BITS(8)
+        ) fifo_decision_from_pe (
+            .clk(clk),
+            .rst(rst),
+            
+            .s_axis_tdata(value_frompipe_drop),
+            .s_axis_tvalid(value_frompipe_last & value_frompipe_valid & value_frompipe_ready),
+            .s_axis_tready(),    
+            .m_axis_tdata(cond_drop),
+            .m_axis_tvalid(cond_valid),
+            .m_axis_tready(cond_ready)
+        );
+
+        assign value_frompred_b_ready = value_read_ready;
+        assign value_read_valid = value_frompred_b_valid;
+        assign value_read_data = value_frompred_b_data;
+
+    end
+endgenerate
 
 
 muu_Value_Get #(
@@ -1942,8 +1767,9 @@ muu_Value_Get #(
 	.value_valid(value_read_valid),//value_frompred_b_valid),
 	.value_ready(value_read_ready),//value_frompred_b_ready),
 
-	.cond_valid(0),//cond_valid),
-	.cond_drop(0),//cond_drop),
+    //these are wired up to the predicate configuration, just to ensure that for each GETCOND we get a signal
+	.cond_valid(cond_valid),
+	.cond_drop(cond_drop),
 	.cond_ready(cond_ready), 
 
     .repl_in_valid(repldata_b_valid),

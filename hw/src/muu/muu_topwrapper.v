@@ -17,7 +17,8 @@
 
 
 module muu_TopWrapper #(
-      parameter IS_SIM = 0
+      parameter IS_SIM = 0,
+      parameter USER_BITS = 3
       )
       (
 
@@ -179,7 +180,7 @@ module muu_TopWrapper #(
    wire 				    sesspackLast;
    wire [63:0] 				    sesspackData;
    wire [63:0] 				    sesspackMeta;
-   wire [2:0]       sesspackUser;
+   wire [USER_BITS-1:0]       sesspackUser;
 
    wire 				    cmdInReady;
    wire 				    cmdInValid;
@@ -253,13 +254,13 @@ module muu_TopWrapper #(
    wire 				    toKvsReady;
    wire 				    toKvsLast;
    wire [127:0] 			    toKvsData;
-   wire [2:0]       toKvsUserId;
+   wire [USER_BITS-1:0]       toKvsUserId;
    
    wire 				    fromKvsValid;
    wire                     fromKvsReady;
    wire                     fromKvsLast;
    wire [127:0]             fromKvsData;
-   wire [7:0]             fromKvsUser;
+   wire [USER_BITS-1:0]             fromKvsUser;
 
    wire 				    finalOutValid;
    wire 				    finalOutReady;
@@ -312,8 +313,8 @@ module muu_TopWrapper #(
    wire 				    splitInReady;
    wire [63:0] 				    splitInData;
    wire [63:0] 				    splitInMeta;
-   wire [128+3:0] 			    splitInDataMerged;
-   wire [2:0]       splitInUser;
+   wire [128+USER_BITS:0] 			    splitInDataMerged;
+   wire [USER_BITS-1:0]       splitInUser;
 
 
    wire [35:0] 				    control0, control1;
@@ -407,7 +408,9 @@ module muu_TopWrapper #(
 
     
    wire[127:0] debug_sess;
-   muu_session_Top muuSessionMngr (
+   muu_session_Top  #(
+                        .USER_BITS(USER_BITS)
+   ) muuSessionMngr (
 					    .clk(clk),
 					    .rst(reset),
 					    .rstn(aresetn),
@@ -440,11 +443,11 @@ module muu_TopWrapper #(
 
     assign splitPreValid = sesspackValid;
     assign sesspackReady = splitPreReady;
-    assign splitPreDataMerged[3+127:0] = {sesspackUser, sesspackMeta, sesspackData};
-    assign splitPreDataMerged[128+3] = sesspackLast;
+    assign splitPreDataMerged[USER_BITS+127:0] = {sesspackUser, sesspackMeta, sesspackData};
+    assign splitPreDataMerged[128+USER_BITS] = sesspackLast;
        
    nukv_fifogen #(
-            .DATA_SIZE(129+3),
+            .DATA_SIZE(129+USER_BITS),
             .ADDR_BITS(6)
         ) fifo_splitprepare (
 						    .clk(clk),
@@ -460,8 +463,8 @@ module muu_TopWrapper #(
 
    assign splitInData = splitInDataMerged[63:0];
    assign splitInMeta = splitInDataMerged[127:64];
-   assign splitInUser = splitInDataMerged[128 +: 3];
-   assign splitInLast = splitInDataMerged[128+3];
+   assign splitInUser = splitInDataMerged[128 +: USER_BITS];
+   assign splitInLast = splitInDataMerged[128+USER_BITS];
  
 					  
   assign toPifReady = 1;					  
@@ -497,7 +500,10 @@ module muu_TopWrapper #(
   
 					   
    muu_Top_Module_Repl
-   #(.IS_SIM(IS_SIM)) muukvs_instance (
+   #(   
+            .IS_SIM(IS_SIM),
+            .USER_BITS(USER_BITS)
+   ) muukvs_instance (
         .clk(clk),
         .rst(reset),
         .s_axis_tvalid(splitInValid),

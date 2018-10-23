@@ -43,10 +43,10 @@ Replicated commands are:
 Node local commands are:
 * Flush
 * Get
-* [ConditionalGet]
+* ConditionalGet
 * [Scan]
 * SetLocal
-* [DeleteLocal]
+* DeleteLocal
 * ConfigTenantLimits
 
 Note: the operations in square brackets have buggy/incomplete behavior and are not to be used until further code updates.
@@ -71,7 +71,7 @@ These operations are formatted as follows:
 Legend: 
 
 * x [1B] = reserved to encode node id
-* C [1B] = opcode: 0x01 for replicated SET, node-local command code: 0x00 for GET, 0x1F for SET-LOCAL, 0xFF for FLUSH
+* C [1B] = opcode: 0x01 for replicated SET, node-local command code: 0x00 for GET, 0x1F for SET-LOCAL, 0x2F for DELETE-LOCAL, 0xFF for FLUSH, 0x40 for GET-CONDITIONAL
 * P [2B] = payload (key + value) size in 64bit words. E.g. 4=4*64bit
 * E [8B] = reserved to encode epoch, zxid
 * K [64B] = key (can be only 64bit long)
@@ -79,6 +79,20 @@ Legend:
 * V [variable] = value (if no value is needed for the operation, stop at K)
 
 In-code examples of these operations can be found in the Go client in /src/
+
+#### Conditional gets
+
+The FPGA can be confugured with one or multiple filters that can execute a condition on the value when retrieved. If the condition holds, the value is returned in full, otherwise an empty response is sent to the client. This allows for pushing down filtering operations into the storage.
+
+A conditional get operation consists of a key and instead of a value, a bitvector that configures *all* processing elements on the node. These can be of various types, but the default ones are "byte comparisons". The bit vector is a concatenation of the configuration vector of each element, padded so that it is a multiple of 8Bs, with a maximum size of 64Bs.
+
+The "byte comparators" have the following configuration bits:
+	
+	Bit 0-11: Offset in the value (counting the 2Bs for length as well!)
+	Bit 12-15: Comparison function (0=equal, 1=smaller, 2=larger, 3=notequal).
+	Bit 16-47 (4 Bytes): Constant to compare to.
+
+If there are 8 comparators, up to 8 x 48B can be provided in the configuration vector. An all zero bitvector disables the comparator, and internally the bitvector is padded with zeros.
 
 ### Tenant shares config
 

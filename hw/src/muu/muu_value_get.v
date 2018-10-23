@@ -55,6 +55,8 @@ module muu_Value_Get #(
 
 );
 
+`include "muu_ops.vh"
+
 localparam [3:0]
 	ST_IDLE   = 0,
 	ST_HEADER = 1,	
@@ -66,17 +68,6 @@ localparam [3:0]
 	ST_NO_HEADER = 8;
 reg [3:0] state;
 reg [3:0] prev_state;
-
-
-localparam [3:0] 
-	OP_IGNORE = 0,
-	OP_GET = 1,
-	OP_SETNEXT = 2,
-	OP_DELCUR = 3,	
-	OP_FLIPPOINT = 4,
-	OP_SETCUR = 5,
-	OP_GETRAW = 6,
-	OP_FLUSH = 4'hF; //(truncated from 8'hFF)
 
 reg [9:0] toread;
 reg [3:0] idx;
@@ -110,7 +101,7 @@ wire send_answer;
 
 assign actual_value_len = (value_data[11:0]+7)/8;
 
-assign value_ready = (idx==7 && output_valid==1 && output_ready==1 && state==ST_VALUE) ? 1 : ((prev_state==ST_VALUE) & flush);
+assign value_ready = (idx==7 && output_valid==1 && output_ready==1 && state==ST_VALUE) ? 1 : ((prev_state==ST_VALUE || state==ST_DROP) & flush);
 
 assign repl_in_ready = (idx==7 && output_valid==1 && output_ready==1 && state==ST_VALUE_REPL) ? 1 : ((prev_state==ST_VALUE_REPL) & flush);
 
@@ -122,9 +113,9 @@ assign htopcode = input_data[KEY_WIDTH+152 +: 4];
 wire[7:0] repopcode;
 assign repopcode = input_data[KEY_WIDTH+144 +: 8];
 
-assign is_write = (htopcode==OP_SETCUR || htopcode==OP_SETNEXT || htopcode==OP_FLIPPOINT) ? 1:0;
-assign is_forme = (htopcode==OP_IGNORE || htopcode==OP_FLUSH) ? 0:1;
-assign send_answer = ((htopcode==OP_SETNEXT && repopcode==8'h02) || (htopcode==OP_FLIPPOINT && repopcode==8'h80)) ? 0:1;
+assign is_write = (htopcode==HTOP_SETCUR || htopcode==HTOP_SETNEXT || htopcode==HTOP_FLIPPOINT) ? 1:0;
+assign is_forme = (htopcode==HTOP_IGNORE || htopcode==HTOP_FLUSH) ? 0:1;
+assign send_answer = ((htopcode==HTOP_SETNEXT && repopcode==OPCODE_PROPOSAL) || (htopcode==HTOP_FLIPPOINT && repopcode==8'h80)) ? 0:1;
 
 reg [KEY_WIDTH+HEADER_WIDTH+META_WIDTH-1:0] lastInputForSet [2**USER_BITS-1:0] ;
 
@@ -133,8 +124,6 @@ reg sendAnswerReg;
 
 wire[USER_BITS-1:0] current_userid;
 assign current_userid = input_data[KEY_WIDTH+META_WIDTH-1 : KEY_WIDTH+META_WIDTH-USER_BITS];
-
-
 
 assign output_user = out_userid;
 
@@ -145,8 +134,9 @@ always @(posedge clk) begin
 		output_last <= 0;
 		input_ready <= 0;
 		flush <= 0;
-		cond_ready <= 0;
 		dropit <= 0;
+
+		cond_ready <= 0;
 
 		scanning <= 0;
 
@@ -162,6 +152,8 @@ always @(posedge clk) begin
 	else begin
 
 		prev_state <= state;
+
+		cond_ready <= 0;
 
 		if (output_valid==1 && output_ready==1) begin
 			output_valid <= 0;
@@ -192,7 +184,6 @@ always @(posedge clk) begin
 
 
 		input_ready <= 0;
-		cond_ready <= 0;
 
 		case (state)
 
@@ -234,7 +225,7 @@ always @(posedge clk) begin
 						end
 				
 					end 
-					else if (htopcode==OP_FLUSH) begin
+					else if (htopcode==HTOP_FLUSH) begin
 						output_valid <= 1;		
 						hasvalue <= 0;
 						state <= ST_HEADER;
@@ -244,7 +235,7 @@ always @(posedge clk) begin
 						output_word <= {32'h0, 32'h0, 16'h1, 16'hffff};
 
 					end 
-					else if (htopcode==OP_GET) begin
+					else if (htopcode==HTOP_GET) begin
 						output_valid <= 1;		
 						hasvalue <= input_data[KEY_WIDTH+META_WIDTH+32 +: 10]==0 ? 0 : 1;
 						toread <= input_data[KEY_WIDTH+META_WIDTH+32 +: 10];
@@ -255,7 +246,7 @@ always @(posedge clk) begin
 						output_word <= {22'h0, input_data[KEY_WIDTH+META_WIDTH+32 +: 10], input_data[KEY_WIDTH+144 +: 8] , input_data[KEY_WIDTH+88 +: 8], 16'hffff};							
 
 					end
-					else if (htopcode==OP_IGNORE && repopcode==8'h2) begin
+					else if (htopcode==HTOP_IGNORE && repopcode==OPCODE_PROPOSAL) begin
 						output_valid <= 1;		
 						hasvalue <= lastInputForSet[current_userid][KEY_WIDTH+META_WIDTH+32 +: 10]==0 ? 0 : 1;
 						toread <= lastInputForSet[current_userid][KEY_WIDTH+META_WIDTH+32 +: 10];
@@ -266,7 +257,7 @@ always @(posedge clk) begin
 						output_word <= {22'h0, (lastInputForSet[current_userid][KEY_WIDTH+META_WIDTH+32 +: 10]+1), input_data[KEY_WIDTH+144 +: 8] , input_data[KEY_WIDTH+88 +: 8], 16'hffff};							
 
 					end
-					else if (htopcode==OP_IGNORE && repopcode==8'h4) begin
+					else if (htopcode==HTOP_IGNORE && repopcode==OPCODE_COMMIT) begin
 						output_valid <= 1;		
 						hasvalue <= input_data[KEY_WIDTH+META_WIDTH+32 +: 10]==0 ? 0 : 1;
 						toread <= input_data[KEY_WIDTH+META_WIDTH+32 +: 10];
@@ -275,6 +266,26 @@ always @(posedge clk) begin
 						key_data <= input_data[KEY_WIDTH-1:0];
 						input_ready <= 1;
 						output_word <= {22'h0, input_data[KEY_WIDTH+META_WIDTH+32 +: 10], input_data[KEY_WIDTH+144 +: 8] , input_data[KEY_WIDTH+88 +: 8], 16'hffff};
+					end
+					else if (htopcode==HTOP_GETCOND) begin
+						if (cond_valid==1 || input_data[KEY_WIDTH+META_WIDTH+32 +: 10]==0) begin
+						
+							output_valid <= 1;		
+							hasvalue <= input_data[KEY_WIDTH+META_WIDTH+32 +: 10]==0 ? 0 : 1;
+							toread <= input_data[KEY_WIDTH+META_WIDTH+32 +: 10];
+							state <= ST_HEADER;
+							meta_data <= input_data[KEY_WIDTH +: META_WIDTH];
+							key_data <= input_data[KEY_WIDTH-1:0];
+							input_ready <= 1;
+							output_word <= {22'h0, input_data[KEY_WIDTH+META_WIDTH+32 +: 10], input_data[KEY_WIDTH+144 +: 8] , input_data[KEY_WIDTH+88 +: 8], 16'hffff};							
+							 
+							dropit <= cond_drop;
+							
+							if (cond_drop==1) begin
+								output_word[32 +: 10] <= 0;							
+							end
+						end
+						
 					end
 					/* 
 					else if (input_data[KEY_WIDTH+HEADER_WIDTH+META_WIDTH-8 +: 4] == 4'b1000 || cond_valid==1 || input_data[KEY_WIDTH+META_WIDTH+32 +: 10]==0 || (is_write==1 && is_forme==0)) begin							
@@ -335,7 +346,9 @@ always @(posedge clk) begin
 			end
 
 			ST_HEADER: begin
-				if (output_ready==1) begin
+				if (output_ready==1 && (hasvalue==0 || cond_valid==1 || is_forme==0)) begin
+					cond_ready <= hasvalue & is_forme;
+
 					output_valid <= 1;
 					output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]};
 
@@ -348,7 +361,7 @@ always @(posedge clk) begin
 							state <= ST_KEY_REPL;					
 						end
 					end else if (hasvalue==1 && toread>0 && dropit==1) begin							
-						state <= ST_DROP;
+						state <= ST_DROP;						
 						flush <= 1;
 						output_last <= (SUPPORT_SCANS==1 && scanning==1) ? must_last : 1;
 					end else begin
@@ -446,6 +459,10 @@ always @(posedge clk) begin
 
 					if (first_value_word==1 && value_data[15:0]<1024) begin
 						toread <= (value_data[15:0]+7)/8-8;
+						if (((value_data[15:0]+7)/8-8)==0) begin
+							flush <= 0;
+							state <= ST_IDLE;
+						end
 					end
 					else if (toread<=8) begin
 						flush <= 0;

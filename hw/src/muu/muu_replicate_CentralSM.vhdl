@@ -142,9 +142,12 @@ architecture beh of muu_replicate_CentralSM is
 	constant OPCODE_SYNCRESP   : integer := 6;
 	constant OPCODE_SYNCCOMMIT : integer := 7;
 
-	constant OPCODE_UNVERSIONEDWRITE : integer := 31;
+	constant OPCODE_UNVERSIONEDWRITE : integer := 31;		
+	constant OPCODE_UNVERSIONEDDELETE : integer := 47;
 
-  constant OPCODE_FLUSHDATASTORE : integer := 255;
+	constant OPCODE_READCONDITIONAL : integer := 64;
+
+    constant OPCODE_FLUSHDATASTORE : integer := 255;
 
 	constant OPCODE_DELWRITEREQ   : integer := 32 + 1;
 	constant OPCODE_DELPROPOSAL   : integer := 32 + 2;
@@ -163,6 +166,11 @@ architecture beh of muu_replicate_CentralSM is
 	constant HTOP_SETCUR     : integer := 5;
 	constant HTOP_GETRAW     : integer := 6;
 	constant HTOP_IGNOREPROP : integer := 7;
+	constant HTOP_GETCOND    : integer := 8;
+	constant HTOP_FLUSH		 : integer := 16; 
+	constant HTOP_SCAN       : integer := 9;
+	constant HTOP_SCANCOND   : integer := 10;
+
 
 	--type Array16Large is array(2**MAX_OUTSTANDING_REQS_BITS-1 downto 0) of std_logic_vector(15 downto 0);
 
@@ -622,6 +630,10 @@ begin
 								when (OPCODE_UNVERSIONEDWRITE) =>
 									myState    <= ST_HANDLEOP;
 									inCmdReady <= '0';
+									
+								when (OPCODE_UNVERSIONEDDELETE) =>
+                                        myState    <= ST_HANDLEOP;
+                                        inCmdReady <= '0';									
 
 								when (OPCODE_ACKPROPOSE) =>
 									traceLoc <= "00001000";
@@ -882,7 +894,7 @@ begin
 								when others =>
 									error_opcode <= inCmdOpCode_I;
 
-                  if (inCmdOpCode_I /= OPCODE_READREQ and inCmdOpCode /= OPCODE_FLUSHDATASTORE) then
+                  if (inCmdOpCode_I /= OPCODE_READREQ and inCmdOpCode_I /= OPCODE_FLUSHDATASTORE and inCmdOpCode_I/=OPCODE_READCONDITIONAL) then
 									 error_valid  <= '1';
                   end if;
 
@@ -895,6 +907,10 @@ begin
 
 										if (inCmdOpCode_I = OPCODE_READREQ) then
 											cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC) <= std_logic_vector(conv_unsigned(HTOP_GET, CMD_HTOP_LEN));
+										end if;
+
+										if (inCmdOpCode_I = OPCODE_READCONDITIONAL) then
+											cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC) <= std_logic_vector(conv_unsigned(HTOP_GETCOND, CMD_HTOP_LEN));
 										end if;
 
 										myState <= ST_WAITOUTREADY;
@@ -1082,6 +1098,21 @@ begin
 
 									malloc_valid <= '1';
 									malloc_data  <= inCmdPayloadSize(15 - 3 downto 0) & "000";
+
+									myState    <= ST_WAITOP;
+									inCmdReady <= '1';
+
+								end if;
+
+							when (OPCODE_UNVERSIONEDDELETE) =>
+								if (cmd_out_ready = '1') then
+									cmd_out_data  <= inCmdAllData;
+									cmd_out_key   <= inCmdKey;
+									cmd_out_user  <= inCmdUser;
+									cmd_out_valid <= '1';
+									inCmdReady    <= '0';
+
+									cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC) <= std_logic_vector(conv_unsigned(HTOP_DELCUR, CMD_HTOP_LEN));								
 
 									myState    <= ST_WAITOP;
 									inCmdReady <= '1';
@@ -1464,6 +1495,8 @@ begin
 
 							cmd_out_valid                                                     <= '1';
 							--cmd_out_data(CMD_PAYLSIZE_LOC+CMD_PAYLSIZE_LEN-1 downto CMD_PAYLSIZE_LOC) <= log_found_size;
+
+							--decided whether RESPONSE IS SILENT in the WRITE modules
 							cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC) <= (others => '0');
 							if (myRole(conv_integer(inCmdUser)) = ROLE_FOLLOWER) then
 								cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1) <= '1';

@@ -15,7 +15,6 @@
 //--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //---------------------------------------------------------------------------
 
-
 module muu_RequestSplit #(	
 	parameter NET_META_WIDTH = 64,
 	parameter VALUE_WIDTH = 512,
@@ -52,6 +51,8 @@ module muu_RequestSplit #(
 
 	output reg [3:0]   _debug
 );
+`include "muu_ops.vh"
+
 
 reg ERRCHECK = 1;
 
@@ -130,22 +131,16 @@ always @ (posedge clk)
 				if (s_axis_tvalid==1 && readyfornew==1) begin
 					// outputs are clear, let's figure out what operation is this
 
-					if (ERRCHECK==1 && s_axis_tdata[15:0]!=16'hFFFF) begin
-						_debug[1:0] <= 1;
-					end
-
-					if (ERRCHECK==1 && (opcode_i<8'hFF && opcode>8'h24)) begin
-						_debug[1:0] <= 3;
-					end
-
-					if (ERRCHECK==1 && s_axis_tdata[16 +: 8]>8'h05) begin
-						_debug[1:0] <= 3;
-					end
-
-
 					opcode <= opcode_i;
 
-					if (opcode_i == 2 || opcode_i == 1 || opcode_i==8'hFF || opcode_i == 0 || opcode_i == 31) begin
+					if (opcode_i == OPCODE_PROPOSAL 
+						|| opcode_i == OPCODE_WRITEREQ 
+						|| opcode_i==OPCODE_FLUSHDATASTORE 
+						|| opcode_i == OPCODE_READREQ
+						|| opcode_i == OPCODE_UNVERSIONEDWRITE 
+						|| opcode_i == OPCODE_UNVERSIONEDDELETE
+						|| opcode_i == OPCODE_READCONDITIONAL
+					  ) begin
 						keylen <= 8'd1;
 					end else begin
 						keylen <= 8'd0;

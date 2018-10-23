@@ -96,7 +96,7 @@ module nukv_Predicate_Eval_Pipeline_v2 #(
             if (i<PIPE_DEPTH-1) begin
 
                 nukv_fifogen #(
-                        .DATA_SIZE(48+96+1),
+                        .DATA_SIZE(48+META_WIDTH+1),
                         .ADDR_BITS(7)
                     ) fifo_predconfig (
                         .clk(clk),
@@ -111,7 +111,8 @@ module nukv_Predicate_Eval_Pipeline_v2 #(
                         .m_axis_tready(prarr_ready[i])
                     );
 
-                nukv_Predicate_Eval #(.SUPPORT_SCANS(SUPPORT_SCANS))  
+                nukv_Predicate_Eval #(.SUPPORT_SCANS(SUPPORT_SCANS),
+                                     .META_WIDTH(META_WIDTH))  
                     pred_eval
                     (
                     .clk(clk),
@@ -141,7 +142,7 @@ module nukv_Predicate_Eval_Pipeline_v2 #(
             end else if (i==PIPE_DEPTH-1) begin
 
                 nukv_fifogen #(
-                        .DATA_SIZE(48+96+1),
+                        .DATA_SIZE(48+META_WIDTH+1),
                         .ADDR_BITS(7)
                     ) fifo_predconfig (
                         .clk(clk),
@@ -156,7 +157,8 @@ module nukv_Predicate_Eval_Pipeline_v2 #(
                         .m_axis_tready(prarr_ready[i])
                     );
 
-                nukv_Predicate_Eval #(.SUPPORT_SCANS(SUPPORT_SCANS))  
+                nukv_Predicate_Eval #(.SUPPORT_SCANS(SUPPORT_SCANS),
+                                     .META_WIDTH(META_WIDTH))  
                     pred_eval
                     (
                     .clk(clk),

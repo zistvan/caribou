@@ -74,6 +74,8 @@ module muu_HT_Write #(
 
 	output reg [15:0] 	debug
 );
+`include "muu_ops.vh"
+
 
 localparam [3:0]
 	ST_IDLE   = 0,
@@ -89,16 +91,7 @@ localparam [3:0]
 	ST_WIPE = 15;
 reg [3:0] state;
 
-localparam [3:0] 
-	OP_IGNORE = 0,
-	OP_GET = 1,
-	OP_SETNEXT = 2,
-	OP_DELCUR = 3,	
-	OP_FLIPPOINT = 4,
-	OP_SETCUR = 5,
-	OP_GETRAW = 6,
-	OP_IGNOREPROP = 7,
-	OP_FLUSH = 4'hF; //(truncated from 8'hFF)
+
 
 reg [3:0] opmode;
 wire op_needsmalloc;
@@ -149,7 +142,7 @@ wire silent_resp;
 assign silent_resp = (resp_opcode==8'h80) ? 1 : 0;
 
 
-assign op_needsmalloc = (opmode==OP_SETNEXT || opmode==OP_SETCUR) ? 1 : 0;
+assign op_needsmalloc = (opmode==HTOP_SETNEXT || opmode==HTOP_SETCUR) ? 1 : 0;
 
 wire [3:0] curr_flags;
 assign curr_flags = (state==ST_IDLE) ? input_data[KEY_WIDTH+META_WIDTH-4 +: 4] : inputReg[KEY_WIDTH+META_WIDTH-4 +: 4];
@@ -346,15 +339,15 @@ always @(posedge clk) begin
 					empty_mem <= 0;
 					empty_ff <= 0;
 
-					if (curr_opcode!=OP_IGNORE && curr_opcode!=OP_IGNOREPROP) begin
+					if (curr_opcode!=HTOP_IGNORE && curr_opcode!=HTOP_IGNOREPROP) begin
 						inputValueSize <= input_data[KEY_WIDTH+64 +: 16];
 					end
 
 
-					if (curr_opcode == OP_IGNORE || curr_opcode == OP_IGNOREPROP) begin					
+					if (curr_opcode == HTOP_IGNORE || curr_opcode == HTOP_IGNOREPROP) begin					
 						state <= ST_SENDOUT;
 
-					end else if (curr_opcode == OP_FLUSH) begin
+					end else if (curr_opcode == HTOP_FLUSH) begin
 						state <= ST_WIPE;
 
 						free_valid <= 1;
@@ -451,7 +444,7 @@ always @(posedge clk) begin
 								found_kk_pos <= pos_kk-1;
 								kicked_keys_found_reg <= kicked_keys_pos_reg;
 
-								if (op_retry==1 && (opmode==OP_SETNEXT || opmode==OP_SETCUR) && pos_kk==kk_tail+1) begin
+								if (op_retry==1 && (opmode==HTOP_SETNEXT || opmode==HTOP_SETCUR) && pos_kk==kk_tail+1) begin
 									oldpointer <= kicked_keys_pos_reg[KEY_WIDTH+31:KEY_WIDTH];
 									kk_cnt <= kk_cnt-1;
 									kk_tail <= kk_tail +1;
@@ -641,7 +634,7 @@ always @(posedge clk) begin
 
 				case (opmode)
 
-					OP_GET : begin
+					HTOP_GET,HTOP_GETCOND : begin
 
 						output_valid <= 1;
 						output_data[0 +: KEY_WIDTH+META_WIDTH+USER_BITS] <= inputReg[0 +: KEY_WIDTH+META_WIDTH+USER_BITS];					
@@ -651,7 +644,7 @@ always @(posedge clk) begin
 					
 					end					
 
-					OP_SETNEXT,OP_SETCUR : begin
+					HTOP_SETNEXT,HTOP_SETCUR : begin
 
 						if (feedback_ready==1 && free_ready==1 && kk_cnt<2**FASTFORWARD_BITS-1) begin 
 
@@ -662,7 +655,7 @@ always @(posedge clk) begin
 
 								feedback_valid <= 1;
 								feedback_data <= {inputReg[KEY_WIDTH+META_WIDTH +: USER_BITS], {META_WIDTH{1'b0}},writebackEntry[0 +: KEY_WIDTH]};
-								feedback_data[KEY_WIDTH+META_WIDTH-8 +: 4] <= OP_SETCUR;
+								feedback_data[KEY_WIDTH+META_WIDTH-8 +: 4] <= HTOP_SETCUR;
 								feedback_data[KEY_WIDTH+META_WIDTH-4 +: 4] <= 4'b0100;
 
 								kicked_keys_write_data <= writebackEntry;						
@@ -675,12 +668,12 @@ always @(posedge clk) begin
 							if (writebackKeyMatch==1) begin
 								// this is the same key, look at pointers	
 
-								if (opmode==OP_SETCUR && writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH]==0) begin
+								if (opmode==HTOP_SETCUR && writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH]==0) begin
 									//nothing prepared yet, put pointer there
 
 									writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH] <= {inputValueSize,mallocRegData};
 
-								end else if (opmode==OP_SETCUR && writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH]!=0) begin
+								end else if (opmode==HTOP_SETCUR && writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH]!=0) begin
 									//pointer location is taken...
 
 									writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH] <= {inputValueSize,mallocRegData};
@@ -689,12 +682,12 @@ always @(posedge clk) begin
 									free_pointer <= writebackEntry[KEY_WIDTH +: 32];
 									free_size <= writebackEntry[KEY_WIDTH+32 +: 16];
 
-								end else if (opmode==OP_SETNEXT && writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]==0) begin
+								end else if (opmode==HTOP_SETNEXT && writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]==0) begin
 									//nothing prepared yet, put pointer there
 
 									writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH] <= {inputValueSize,mallocRegData};
 
-								end else if (opmode==OP_SETNEXT && writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]!=0) begin
+								end else if (opmode==HTOP_SETNEXT && writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]!=0) begin
 									//pointer location is taken...
 
 									writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH] <= {inputValueSize,mallocRegData};
@@ -706,7 +699,7 @@ always @(posedge clk) begin
 
 							end else begin
 								// this is a brand new insert								
-								if (opmode==OP_SETCUR) begin
+								if (opmode==HTOP_SETCUR) begin
 
 									writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH] <= {inputValueSize,mallocRegData};
 									writebackEntry[0 +: KEY_WIDTH] <= inputReg[0 +: KEY_WIDTH];
@@ -724,7 +717,7 @@ always @(posedge clk) begin
 
 					end
 
-					OP_DELCUR : begin
+					HTOP_DELCUR : begin
 						if (free_ready==1) begin 
 
 							if (writebackKeyMatch==1) begin
@@ -749,7 +742,7 @@ always @(posedge clk) begin
 						end
 					end
 
-					OP_FLIPPOINT : begin
+					HTOP_FLIPPOINT : begin
 						if (free_ready==1) begin 
 
 							if (writebackKeyMatch==1 && writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]!=0) begin
@@ -783,7 +776,7 @@ always @(posedge clk) begin
 
 					end
 
-					OP_FLUSH : begin
+					HTOP_FLUSH : begin
 						if (output_ready==1) begin
 							output_data <= { 16'h0, {VALPOINTER_WIDTH{1'b0}}, inputReg[0 +: KEY_WIDTH+META_WIDTH+USER_BITS]};
 							output_valid <= 1;
@@ -800,9 +793,9 @@ always @(posedge clk) begin
 			ST_SENDOUT : begin
 				if (output_ready==1) begin
 					output_data <= {16'h0, {VALPOINTER_WIDTH{1'b0}}, inputReg[0 +: KEY_WIDTH+META_WIDTH+USER_BITS]};
-					if (opmode==OP_IGNOREPROP) begin
+					if (opmode==HTOP_IGNOREPROP) begin
 						output_data[KEY_WIDTH+META_WIDTH+USER_BITS+VALPOINTER_WIDTH +: 16] <= inputValueSize;
-						output_data[KEY_WIDTH+META_WIDTH-8 +: 4] <= OP_IGNORE;
+						output_data[KEY_WIDTH+META_WIDTH-8 +: 4] <= HTOP_IGNORE;
 					end
 					output_valid <= 1;
 					state <= ST_IDLE;
@@ -827,10 +820,10 @@ always @(posedge clk) begin
 
 							output_valid <= 1;
 
-							if (opmode==OP_SETNEXT) begin
+							if (opmode==HTOP_SETNEXT) begin
 								output_data <= {16'h0, writebackEntry[KEY_WIDTH +VALPOINTER_WIDTH +: VALPOINTER_WIDTH], inputReg[0 +: KEY_WIDTH+META_WIDTH+USER_BITS]};
 							end else begin
-								if (silent_resp==1 && opmode==OP_FLIPPOINT) begin
+								if (silent_resp==1 && opmode==HTOP_FLIPPOINT) begin
 									output_data <= {16'hFFFF, writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH], inputReg[0 +: KEY_WIDTH+META_WIDTH+USER_BITS]};
 								end
 								else begin

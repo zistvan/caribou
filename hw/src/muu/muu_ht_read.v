@@ -15,7 +15,6 @@
 //--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //---------------------------------------------------------------------------
 
-
 module muu_HT_Read #(
 	parameter KEY_WIDTH = 128,
 	parameter META_WIDTH = 96,
@@ -44,6 +43,7 @@ module muu_HT_Read #(
 	output reg         rdcmd_valid,
 	input  wire         rdcmd_ready
 );
+`include "muu_ops.vh"
 
     reg selectInputNext;
     reg selectInput; //1 == input, 0==feedback
@@ -132,7 +132,7 @@ module muu_HT_Read #(
                     state <= ST_ISSUE_READ_TWO;                      
                     output_data <= in_data;                  
 
-                    if (in_data[KEY_WIDTH+META_WIDTH-8 +: 4]==0 || in_data[KEY_WIDTH+META_WIDTH-8 +: 4]==7) begin
+                    if (in_data[KEY_WIDTH+META_WIDTH-8 +: 4]==HTOP_IGNORE || in_data[KEY_WIDTH+META_WIDTH-8 +: 4]==HTOP_IGNOREPROP) begin
                         // ignore this and don't send read!
                         in_ready <= 1; 
                         state <= ST_OUTPUT_KEY;       

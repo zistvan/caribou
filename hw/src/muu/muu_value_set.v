@@ -15,7 +15,6 @@
 //--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //---------------------------------------------------------------------------
 
-
 module muu_Value_Set #(
 	parameter KEY_WIDTH = 64,
 	parameter HEADER_WIDTH = 16+32, //vallen + val addr
@@ -72,6 +71,8 @@ module muu_Value_Set #(
 	input wire scan_mode
 
 );
+`include "muu_ops.vh"
+
 
 localparam [3:0]
 	ST_IDLE   = 0,
@@ -88,17 +89,6 @@ localparam [3:0]
 	ST_PREP_THROWREPL = 12,
 	ST_THROW_AND_REPL = 13;
 reg [3:0] state;
-
-
-localparam [3:0] 
-	OP_IGNORE = 0,
-	OP_GET = 1,
-	OP_SETNEXT = 2,
-	OP_DELCUR = 3,	
-	OP_FLIPPOINT = 4,
-	OP_SETCUR = 5,
-	OP_GETRAW = 6,
-	OP_FLUSH = 4'hF; //(truncated from 8'hFF)
 
 reg [9:0] tothrow;
 reg [9:0] towrite;
@@ -125,8 +115,8 @@ assign htopcode = input_data[KEY_WIDTH+152 +: 4];
 assign repopcode = input_data[KEY_WIDTH+144 +: 8];
 
 
-assign is_write = (htopcode==OP_SETCUR || htopcode==OP_SETNEXT) ? 1:0;
-assign is_forme = (htopcode==OP_IGNORE || htopcode==OP_FLIPPOINT || htopcode==OP_FLUSH) ? 0:1;
+assign is_write = (htopcode==HTOP_SETCUR || htopcode==HTOP_SETNEXT) ? 1:0;
+assign is_forme = (htopcode==HTOP_IGNORE || htopcode==HTOP_FLIPPOINT || htopcode==HTOP_FLUSH) ? 0:1;
 
 wire [15:0] input_data_vallen;
 wire [31:0] input_data_valpoint;
@@ -200,7 +190,7 @@ always @(posedge clk) begin
 					if (input_data_vallen!=0) begin
 						// this is a succesful set
 
-						if (input_data_repcount > 0 && repopcode!=3) begin
+						if (input_data_repcount > 0 && repopcode!=OPCODE_ACKPROPOSE) begin
 							state <= ST_PREP_REPL;
 							repl_conf_size <= (input_data_vallen+7)/8;		
 							repl_conf_count <= input_data_repcount;
@@ -218,7 +208,7 @@ always @(posedge clk) begin
 						firstcommand <= 1;
 					end else begin
 						// this is a failed set
-						if (input_data_repcount > 0 && repopcode!=3) begin
+						if (input_data_repcount > 0 && repopcode!=OPCODE_ACKPROPOSE) begin
 							state <= ST_PREP_THROWREPL;
 							repl_conf_size <= (input_data_vallen+7)/8;		
 							repl_conf_count <= input_data_repcount;
@@ -240,12 +230,14 @@ always @(posedge clk) begin
 				end else if (input_valid==1 && is_write==0 && is_forme==1) begin // && pe_ready==1) begin
 					//this is a get, ignore the value input and issue read requests					
 
+					//TODO: There is going to a n issue if you get-cond a non-existing key because the "value" of the request that encodes the parameters will not be flushed...
+
 					if (input_data_vallen==0) begin
 						state <= ST_OUTPUT;
 						input_ready <= 1;
 						output_data <= input_data;
 
-						if (SUPPORT_SCANS==1 && input_data[KEY_WIDTH+HEADER_WIDTH+144 +: 4]==4'b1100) 
+						if (SUPPORT_SCANS==1 && htopcode==HTOP_SCANCOND) 
 						begin
 							state <= ST_PREDEVALCONF;			
 							pred_meta <= input_data[KEY_WIDTH+HEADER_WIDTH +: META_WIDTH];
@@ -253,12 +245,14 @@ always @(posedge clk) begin
 							need_scan <= 1;
 						end
 
-						if (input_data[KEY_WIDTH+HEADER_WIDTH+144 +: 4]==4'b0100) begin
+						// looks like this is a dead branch -- removed
+						/*if (input_data[KEY_WIDTH+HEADER_WIDTH+144 +: 4]==4'b0100) begin
 							state <= ST_THROW;
 							tothrow <= 8;
 							value_ready <= 1;	
 						end
-						
+						*/
+
 					end else 
 					begin										
 						state <= ST_RDCMD;
@@ -268,11 +262,11 @@ always @(posedge clk) begin
 						readaddr <= {2'b0, input_data_valpoint[30:0]};
 						toread <= input_data_vallen;			
 
-						if (input_data[KEY_WIDTH+HEADER_WIDTH+144 +: 4]==4'b0100) begin														
+						if (htopcode==HTOP_GETCOND) begin														
 							state <= ST_PREDEVALCONF;
 							pred_meta <= input_data[KEY_WIDTH+HEADER_WIDTH +: META_WIDTH];
 
-						end else if (SUPPORT_SCANS==1 && input_data[KEY_WIDTH+HEADER_WIDTH+144 +: 4]==4'b1100) begin
+						end else if (SUPPORT_SCANS==1 && htopcode==HTOP_SCANCOND) begin
 							state <= ST_PREDEVALCONF;			
 							pred_meta <= input_data[KEY_WIDTH+HEADER_WIDTH +: META_WIDTH];
 
