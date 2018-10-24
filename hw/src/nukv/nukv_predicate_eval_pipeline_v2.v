@@ -102,7 +102,9 @@ module nukv_Predicate_Eval_Pipeline_v2 #(
                         .clk(clk),
                         .rst(rst),
                         
-                        .s_axis_tdata({pred_data[META_WIDTH+i*48 +: 48],pred_data[META_WIDTH-1:0], pred_scan}),
+                        // we remove 16 bits after the meta from the value because these bits encode the length of the
+                        // value field
+                        .s_axis_tdata({pred_data[16+ META_WIDTH+i*48 +: 48],pred_data[META_WIDTH-1:0], pred_scan}),
                         .s_axis_tvalid(pred_valid & pred_ready),
                         .s_axis_tready(prarr_in_ready[i]),
                         
