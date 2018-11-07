@@ -27,7 +27,7 @@ module muu_Top_Module_Repl #(
     parameter KEY_WIDTH = 64,
     parameter HASHTABLE_MEM_SIZE = 20,
     parameter VALUESTORE_MEM_SIZE = 24,
-    parameter FILTER_PRED_CNT = 8,
+    parameter FILTER_PRED_CNT = 0,
     parameter FILTER_REGEX_PARA = 0,
 	parameter IS_SIM = 0,
     parameter USER_BITS = 3
@@ -1846,7 +1846,7 @@ reg[191:0] data_aux;
 
 
    // -------------------------------------------------
-   /*  */
+   /* 
 
 
    wire [35:0] 				    control0, control1;
