@@ -499,7 +499,7 @@ module muu_TopWrapper #(
   assign     ht_dramWrData_valid = syncMode==1 ? mem_write_valid : ht_dramWrData_valid_r;
   
 					   
-   muu_Top_Module_Repl
+   muu_Top_Module_Dedup
    #(   
             .IS_SIM(IS_SIM),
             .USER_BITS(USER_BITS)
