@@ -688,19 +688,19 @@ nukv_fifogen #(
     .m_axis_tready(value_prehash_ready)
 );
 
-sha256_stream sha_inst
+muu_Dedup_Hashers sha_engines
 (
     .clk(clk),
     .rst(rst),
     .mode(1),
-    .s_tdata_i(value_prehash_data),
-    .s_tlast_i(value_prehash_last),
-    .s_tvalid_i(value_prehash_valid),
-    .s_tready_o(value_prehash_ready),
-    .digest_o(value_hash_data),
-    .digest_valid_o(value_hash_valid)
+    .input_data(value_prehash_data),
+    .input_last(value_prehash_last),
+    .input_valid(value_prehash_valid),
+    .input_ready(value_prehash_ready),
+    .hash_data(value_hash_data),
+    .hash_valid(value_hash_valid),
+    .hash_ready(value_hash_ready)
 );
-
 
 
 nukv_fifogen #(
