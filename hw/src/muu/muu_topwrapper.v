@@ -346,9 +346,6 @@ module muu_TopWrapper #(
    reg          is_first_output_cycle;
    
    reg [31:0] myClock;
-   
-   wire clk;
-   assign clk = aclk;
 
 
    assign m_axis_listen_port_TDATA = axis_listen_port_data;
@@ -357,7 +354,7 @@ module muu_TopWrapper #(
    reg [15:0] min_port;
    reg [15:0] max_port;
    //open up server port (2888)
-   always @(posedge clk) 
+   always @(posedge aclk) 
      begin
 	reset <= !aresetn;
 	
@@ -391,7 +388,7 @@ module muu_TopWrapper #(
             .DATA_SIZE(65),
             .ADDR_BITS(5)
         ) input_firstword_fifo_inst (
-                .clk(clk),
+                .clk(aclk),
                 .rst(reset),
                 .s_axis_tvalid(s_axis_rx_data_TVALID),
                 .s_axis_tready(s_axis_rx_data_TREADY),
@@ -411,7 +408,7 @@ module muu_TopWrapper #(
    muu_session_Top  #(
                         .USER_BITS(USER_BITS)
    ) muuSessionMngr (
-					    .clk(clk),
+					    .clk(aclk),
 					    .rst(reset),
 					    .rstn(aresetn),
 
@@ -450,7 +447,7 @@ module muu_TopWrapper #(
             .DATA_SIZE(129+USER_BITS),
             .ADDR_BITS(6)
         ) fifo_splitprepare (
-						    .clk(clk),
+						    .clk(aclk),
 						    .rst(reset),
 						    .s_axis_tvalid(splitPreValid),
 						    .s_axis_tready(splitPreReady),
@@ -498,13 +495,15 @@ module muu_TopWrapper #(
   assign     ht_dramWrData_data = syncMode==1? mem_write_data : ht_dramWrData_data_r;
   assign     ht_dramWrData_valid = syncMode==1 ? mem_write_valid : ht_dramWrData_valid_r;
   
-					   
+	reg injectValid;
+  reg[127:0] injectWord;		
+
    muu_Top_Module_Repl
    #(   
             .IS_SIM(IS_SIM),
             .USER_BITS(USER_BITS)
    ) muukvs_instance (
-        .clk(clk),
+        .clk(aclk),
         .rst(reset),
         .s_axis_tvalid(splitInValid),
         .s_axis_tready(splitInReady),
@@ -598,17 +597,32 @@ module muu_TopWrapper #(
    );
 
 // .S00_AXIS_TDATA({fromKvsData[63:0],fromKvsData[127:64]}),
+    
+  
 
+    always @(posedge aclk) begin  
+      if(reset) begin
+         injectValid <= 0;
+      end else begin
+        if ((injectValid==1 && fromKvsReady==1) || fromKvsValid==1) begin
+          injectValid <= 0;
+        end
+        if (injectValid==0 && fromKvsValid==1 && fromKvsReady==1 && fromKvsLast==1) begin
+          injectValid <= 1;
+          injectWord <= {fromKvsData[127:64],64'd0};
+        end
+      end
+    end
 
         nukv_fifogen #(
             .DATA_SIZE(128+1),
             .ADDR_BITS(4)
         ) fifo_lastbeforeout (
-                .clk(clk),
+                .clk(aclk),
                 .rst(reset),
-                .s_axis_tvalid(fromKvsValid),
+                .s_axis_tvalid(fromKvsValid | injectValid),
                 .s_axis_tready(fromKvsReady),
-                .s_axis_tdata({fromKvsLast,fromKvsData}),  
+                .s_axis_tdata((injectValid==1 && fromKvsValid==0) ? {1'b1,injectWord} : {fromKvsLast,fromKvsData}),  
                 .m_axis_tvalid(finalOutValid),
                 .m_axis_tready(finalOutReady),
                 .m_axis_tdata({finalOutLast,finalOutData})
@@ -624,14 +638,14 @@ module muu_TopWrapper #(
    //assign timerReady = is_first_output_cycle & finalOutValid & finalOutReady;
       
    
-   always @(posedge clk) 
+   always @(posedge aclk) 
      begin
 	if (aresetn == 0) begin
 	   is_first_output_cycle <= 1;
 	   m_axis_tx_metadata_TVALID <= 0;       
 	end
 	else begin
-	   if (m_axis_tx_data_TVALID==1 && m_axis_tx_data_TREADY==1 && m_axis_tx_metadata_TREADY==1 && is_first_output_cycle==1) begin
+	   if (finalOutValid==1 && finalOutReady==1 && is_first_output_cycle==1) begin
 	      m_axis_tx_metadata_TVALID <= 1;
 	      m_axis_tx_metadata_TDATA <= finalOutData[64 +: 16];
 	      is_first_output_cycle <= 0;	  
@@ -641,7 +655,7 @@ module muu_TopWrapper #(
 	      m_axis_tx_metadata_TVALID <= 0;	  
 	   end
 
-	   if (m_axis_tx_data_TVALID==1 && m_axis_tx_data_TREADY==1 && m_axis_tx_data_TLAST==1) begin
+	   if (finalOutValid==1 && finalOutReady==1 && finalOutLast==1) begin
 	      is_first_output_cycle <= 1;
 	   end
 	end
@@ -656,7 +670,7 @@ module muu_TopWrapper #(
    
    reg [31:0] position_consumed;   
 
-   always @(posedge clk) 
+   always @(posedge aclk) 
      begin
 	if (aresetn == 0) begin
            dbg_capture_count <= 0;

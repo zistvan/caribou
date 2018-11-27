@@ -497,13 +497,13 @@ wire regSessionCount_V_vld;
 
 wire [161:0] debug_out;
 
-
-tcp_ip_wrapper #(
+network_stack #(
+//tcp_ip_wrapper #(
     .MAC_ADDRESS    (48'hE59D02350A00), //bytes reversed
-    .IP_ADDRESS     (32'hD1D4010A), //reverse
+    //.IP_ADDRESS     (32'hD1D4010A), //reverse
     .IP_SUBNET_MASK     (32'h00FFFFFF), //reverse
-    .IP_DEFAULT_GATEWAY     (32'h01D4010A), //reverse
-    .DHCP_EN        (0)
+    .IP_DEFAULT_GATEWAY     (32'h01D4010A) //reverse
+    //.DHCP_EN        (0)
 )
 tcp_ip_inst (
 .aclk           (axi_clk),
@@ -522,6 +522,7 @@ tcp_ip_inst (
 .AXI_S_Stream_TKEEP           (AXI_S_Stream_TKEEP),
 .AXI_S_Stream_TLAST           (AXI_S_Stream_TLAST),
 
+/*
 // memory rx cmd streams
 .m_axis_rxread_cmd_TVALID           (axis_rxread_cmd_TVALID),
 .m_axis_rxread_cmd_TREADY           (axis_rxread_cmd_TREADY),
@@ -547,7 +548,7 @@ tcp_ip_inst (
 .m_axis_rxwrite_data_TDATA           (axis_rxwrite_data_TDATA),
 .m_axis_rxwrite_data_TKEEP           (axis_rxwrite_data_TKEEP),
 .m_axis_rxwrite_data_TLAST           (axis_rxwrite_data_TLAST),
-
+*/
 // memory tx cmd streams
 .m_axis_txread_cmd_TVALID           (axis_txread_cmd_TVALID),
 .m_axis_txread_cmd_TREADY           (axis_txread_cmd_TREADY),
@@ -556,9 +557,9 @@ tcp_ip_inst (
 .m_axis_txwrite_cmd_TREADY           (axis_txwrite_cmd_TREADY),
 .m_axis_txwrite_cmd_TDATA           (axis_txwrite_cmd_TDATA),
 // memory tx status streams
-.s_axis_txread_sts_TVALID           (axis_txread_sts_TVALID),
-.s_axis_txread_sts_TREADY           (axis_txread_sts_TREADY),
-.s_axis_txread_sts_TDATA           (axis_txread_sts_TDATA),
+//.s_axis_txread_sts_TVALID           (axis_txread_sts_TVALID),
+//.s_axis_txread_sts_TREADY           (axis_txread_sts_TREADY),
+//.s_axis_txread_sts_TDATA           (axis_txread_sts_TDATA),
 .s_axis_txwrite_sts_TVALID           (axis_txwrite_sts_TVALID),
 .s_axis_txwrite_sts_TREADY           (axis_txwrite_sts_TREADY),
 .s_axis_txwrite_sts_TDATA           (axis_txwrite_sts_TDATA),
@@ -653,12 +654,13 @@ tcp_ip_inst (
 .s_axis_udp_tx_length_tready(axis_udp_tx_length_tready),
 .s_axis_udp_tx_length_tdata(axis_udp_tx_length_tdata),
 */
-    
+
+.ip_address_in(32'hD1D4010A),    
 .ip_address_out(ip_address),
 .regSessionCount_V(regSessionCount_V),
 .regSessionCount_V_ap_vld(regSessionCount_V_vld),
 
-.debug_out(debug_out),
+//.debug_out(debug_out),
 
 .board_number(switch[3:0]),
 .subnet_number(switch[5:4])
@@ -1040,7 +1042,7 @@ assign axis_txwrite_cmd_TREADY = toeTX_s_axis_write_cmd_tready;
 assign toeTX_s_axis_write_cmd_tdata = axis_txwrite_cmd_TDATA;
 // memory sts streams
 assign axis_txread_sts_TVALID         = toeTX_m_axis_read_sts_tvalid;
-assign toeTX_m_axis_read_sts_tready = axis_txread_sts_TREADY;
+assign toeTX_m_axis_read_sts_tready = 1'b1;//axis_txread_sts_TREADY;
 assign axis_txread_sts_TDATA          = toeTX_m_axis_read_sts_tdata;
 assign axis_txwrite_sts_TVALID        = toeTX_m_axis_write_sts_tvalid;
 assign toeTX_m_axis_write_sts_tready    = axis_txwrite_sts_TREADY;
