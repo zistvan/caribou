@@ -31,8 +31,8 @@ module muu_Dedup_Hashers
 	input		  hash_ready
 );
 
-parameter HASH_COUNT_BITS = 3;
-parameter MAX_HASH_ENGINES = 8;
+parameter HASH_COUNT_BITS = 4;
+parameter MAX_HASH_ENGINES = 9;
 
 wire [512:0] hash_input_data [MAX_HASH_ENGINES-1:0];
 reg [512:0] hash_input_prebuf [MAX_HASH_ENGINES-1:0];

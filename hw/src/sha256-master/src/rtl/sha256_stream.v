@@ -49,15 +49,26 @@ module sha256_stream
    output 	  digest_valid_o);
 
    reg 		  first_block;
+   wire digest_step_valid; 
+   reg  first_valid_cycle;
 
    always @(posedge clk) begin
-      if (s_tvalid_i & s_tready_o)
-	first_block <= s_tlast_i;
+      if (s_tvalid_i & s_tready_o) begin
+	   first_block <= s_tlast_i;
+	   first_valid_cycle <= 1;
+	  end
+
+      if (digest_valid_o==1) begin
+        first_valid_cycle <= 0;
+      end
 
       if (rst) begin
 	 first_block <= 1'b1;
-      end
+	 first_valid_cycle <= 1'b1;
+      end            
    end
+   
+   assign digest_valid_o = digest_step_valid & first_block & first_valid_cycle;
    
    sha256_core core
      (.clk     (clk),
@@ -72,6 +83,6 @@ module sha256_stream
       .ready(s_tready_o),
 
       .digest       (digest_o),
-      .digest_valid (digest_valid_o));
+      .digest_valid (digest_step_valid));
 
 endmodule

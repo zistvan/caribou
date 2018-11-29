@@ -170,23 +170,23 @@ wire [39:0] upd_wrcmd_data;
 wire        upd_wrcmd_ready;
 
 wire [15:0] mreq_data;
-wire mreq_valid;
-wire mreq_ready;
+(* mark_debug = "true" *)wire mreq_valid;
+(* mark_debug = "true" *)wire mreq_ready;
 
 wire [15:0] mreq_data_b;
 wire mreq_valid_b;
 wire mreq_ready_b;
 
 wire [31:0] malloc_data;
-wire malloc_valid;
-wire malloc_failed;
-wire malloc_ready;
+(* mark_debug = "true" *)wire malloc_valid;
+(* mark_debug = "true" *)wire malloc_failed;
+(* mark_debug = "true" *)wire malloc_ready;
 
 wire [31:0] free_data;
 wire [15:0] free_size;
-wire free_valid;
-wire free_ready;
-wire free_wipe;
+(* mark_debug = "true" *)wire free_valid;
+(* mark_debug = "true" *)wire free_ready;
+(* mark_debug = "true" *)wire free_wipe;
 
 wire [31:0] malloc_data_b;
 wire [31+1:0] malloc_data_full_b;
@@ -203,12 +203,12 @@ wire free_wipe_b;
 
 wire [63:0] key_data;
 wire key_last;
-wire key_valid;
-wire key_ready;
+(* mark_debug = "true" *)wire key_valid;
+(* mark_debug = "true" *)wire key_ready;
 
 wire [EXT_META_WIDTH-1:0] meta_data;
-wire meta_valid;
-wire meta_ready;
+(* mark_debug = "true" *)wire meta_valid;
+(* mark_debug = "true" *)wire meta_ready;
 
 
 wire [USER_BITS+63:0] tohash_data;
@@ -276,8 +276,8 @@ wire fromset_valid;
 wire fromset_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_b_data;
-wire fromset_b_valid;
-wire fromset_b_ready;
+(* mark_debug = "true" *)wire fromset_b_valid;
+(* mark_debug = "true" *)wire fromset_b_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] towrite_data;
 wire towrite_valid;
@@ -411,9 +411,9 @@ reg sAxisSecond;
 
 wire [127:0] in_axis_tdata;
 wire [USER_BITS-1:0] in_axis_tuserid;
-wire         in_axis_tvalid;
-wire          in_axis_tlast;
-wire         in_axis_tready;
+(* mark_debug = "true" *)wire         in_axis_tvalid;
+(* mark_debug = "true" *)wire          in_axis_tlast;
+(* mark_debug = "true" *)wire         in_axis_tready;
 
 reg decruserValid;
 reg[7:0] decruserID;
@@ -663,13 +663,13 @@ nukv_fifogen #(
 );
 
 wire[511:0] value_prehash_data;
-wire value_prehash_last;
-wire value_prehash_valid;
-wire value_prehash_ready;
+(* mark_debug = "true" *)wire value_prehash_last;
+(* mark_debug = "true" *)wire value_prehash_valid;
+(* mark_debug = "true" *)wire value_prehash_ready;
 
 wire[63:0] value_hash_data;
-wire value_hash_valid;
-wire value_hash_ready;
+(* mark_debug = "true" *)wire value_hash_valid;
+(* mark_debug = "true" *)wire value_hash_ready;
 
 nukv_fifogen #(
     .DATA_SIZE(513),
@@ -692,7 +692,6 @@ muu_Dedup_Hashers sha_engines
 (
     .clk(clk),
     .rst(rst),
-    .mode(1),
     .input_data(value_prehash_data),
     .input_last(value_prehash_last),
     .input_valid(value_prehash_valid),

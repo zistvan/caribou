@@ -256,9 +256,9 @@ module muu_TopWrapper #(
    wire [127:0] 			    toKvsData;
    wire [USER_BITS-1:0]       toKvsUserId;
    
-   wire 				    fromKvsValid;
-   wire                     fromKvsReady;
-   wire                     fromKvsLast;
+   (* mark_debug = "true" *)wire 				    fromKvsValid;
+   (* mark_debug = "true" *)wire                     fromKvsReady;
+   (* mark_debug = "true" *)wire                     fromKvsLast;
    wire [127:0]             fromKvsData;
    wire [USER_BITS-1:0]             fromKvsUser;
 
@@ -308,9 +308,9 @@ module muu_TopWrapper #(
    wire 				    splitPreReady;
    wire [3+128:0] 			    splitPreDataMerged;
 
-   wire 				    splitInValid;
-   wire 				    splitInLast;
-   wire 				    splitInReady;
+   (* mark_debug = "true" *)wire 				    splitInValid;
+   (* mark_debug = "true" *)wire 				    splitInLast;
+   (* mark_debug = "true" *)wire 				    splitInReady;
    wire [63:0] 				    splitInData;
    wire [63:0] 				    splitInMeta;
    wire [128+USER_BITS:0] 			    splitInDataMerged;

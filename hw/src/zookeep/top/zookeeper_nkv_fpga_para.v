@@ -702,80 +702,80 @@ assign axis_mc_udp_tx_data_TDATA = 0;
  
  
    wire [511:0] ht_dramRdData_data;
-     wire          ht_dramRdData_empty;
+(* mark_debug = "true" *)     wire          ht_dramRdData_empty;
      wire          ht_dramRdData_almost_empty;
-    wire          ht_dramRdData_read;
+(* mark_debug = "true" *)    wire          ht_dramRdData_read;
 
 
     wire [63:0] ht_cmd_dramRdData_data;
-    wire        ht_cmd_dramRdData_valid;
-     wire        ht_cmd_dramRdData_stall;
+(* mark_debug = "true" *)    wire        ht_cmd_dramRdData_valid;
+(* mark_debug = "true" *)     wire        ht_cmd_dramRdData_stall;
 
 
     wire [511:0] ht_dramWrData_data;
-    wire          ht_dramWrData_valid;
-     wire          ht_dramWrData_stall;
+(* mark_debug = "true" *)    wire          ht_dramWrData_valid;
+(* mark_debug = "true" *)     wire          ht_dramWrData_stall;
 
 
     wire [63:0] ht_cmd_dramWrData_data;
-    wire        ht_cmd_dramWrData_valid;
-     wire        ht_cmd_dramWrData_stall;
+(* mark_debug = "true" *)    wire        ht_cmd_dramWrData_valid;
+(* mark_debug = "true" *)     wire        ht_cmd_dramWrData_stall;
      
 
      
    wire [511:0] upd_dramRdData_data;
-   wire          upd_dramRdData_empty;
+(* mark_debug = "true" *)   wire          upd_dramRdData_empty;
    wire          upd_dramRdData_almost_empty;
-  wire          upd_dramRdData_read;
+(* mark_debug = "true" *)  wire          upd_dramRdData_read;
 
  
   wire [63:0] upd_cmd_dramRdData_data;
-  wire        upd_cmd_dramRdData_valid;
-   wire        upd_cmd_dramRdData_stall;
+(* mark_debug = "true" *)  wire        upd_cmd_dramRdData_valid;
+(* mark_debug = "true" *)   wire        upd_cmd_dramRdData_stall;
 
  
   wire [511:0] upd_dramWrData_data;
-  wire          upd_dramWrData_valid;
-   wire          upd_dramWrData_stall;
+(* mark_debug = "true" *)  wire          upd_dramWrData_valid;
+(* mark_debug = "true" *)   wire          upd_dramWrData_stall;
 
  
   wire [63:0] upd_cmd_dramWrData_data;
-  wire        upd_cmd_dramWrData_valid;
-   wire        upd_cmd_dramWrData_stall;    
+(* mark_debug = "true" *)  wire        upd_cmd_dramWrData_valid;
+(* mark_debug = "true" *)   wire        upd_cmd_dramWrData_stall;    
 
 
   wire [63:0] ptr_rdcmd_data;
-  wire         ptr_rdcmd_valid;
-  wire         ptr_rdcmd_ready;
+(* mark_debug = "true" *)  wire         ptr_rdcmd_valid;
+(* mark_debug = "true" *)  wire         ptr_rdcmd_ready;
 
   wire [512-1:0]  ptr_rd_data;
-  wire         ptr_rd_valid;
-  wire         ptr_rd_ready; 
+(* mark_debug = "true" *)  wire         ptr_rd_valid;
+(* mark_debug = "true" *)  wire         ptr_rd_ready; 
 
   wire [512-1:0] ptr_wr_data;
-  wire         ptr_wr_valid;
-  wire         ptr_wr_ready;
+(* mark_debug = "true" *)  wire         ptr_wr_valid;
+(* mark_debug = "true" *)  wire         ptr_wr_ready;
 
   wire [63:0] ptr_wrcmd_data;
-  wire         ptr_wrcmd_valid;
-  wire         ptr_wrcmd_ready;
+(* mark_debug = "true" *)  wire         ptr_wrcmd_valid;
+(* mark_debug = "true" *)  wire         ptr_wrcmd_ready;
 
 
   wire [63:0] bmap_rdcmd_data;
-  wire         bmap_rdcmd_valid;
-  wire         bmap_rdcmd_ready;
+(* mark_debug = "true" *)  wire         bmap_rdcmd_valid;
+(* mark_debug = "true" *)  wire         bmap_rdcmd_ready;
 
   wire [512-1:0]  bmap_rd_data;
-  wire         bmap_rd_valid;
-  wire         bmap_rd_ready; 
+(* mark_debug = "true" *)  wire         bmap_rd_valid;
+(* mark_debug = "true" *)  wire         bmap_rd_ready; 
 
   wire [512-1:0] bmap_wr_data;
-  wire         bmap_wr_valid;
-  wire         bmap_wr_ready;
+(* mark_debug = "true" *)  wire         bmap_wr_valid;
+(* mark_debug = "true" *)  wire         bmap_wr_ready;
 
   wire [63:0] bmap_wrcmd_data;
-  wire         bmap_wrcmd_valid;
-  wire         bmap_wrcmd_ready;
+(* mark_debug = "true" *)  wire         bmap_wrcmd_valid;
+(* mark_debug = "true" *)  wire         bmap_wrcmd_ready;
 
 
 assign AXI_M2_Stream_TKEEP = AXI_M2_Stream_TVALID==1 ? 8'b11111111 : 8'b00000000;
