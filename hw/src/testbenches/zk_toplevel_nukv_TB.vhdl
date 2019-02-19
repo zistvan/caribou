@@ -28,8 +28,8 @@ end;
 
 architecture bench of zk_toplevel_nukv_TB is
 
-   component zookeeper_tcp_top_parallel_nkv
-  --component muu_TopWrapper 
+  -- component zookeeper_tcp_top_parallel_nkv
+  component muu_TopWrapper 
   generic (
        IS_SIM : integer := 0 
     );
@@ -376,7 +376,7 @@ begin
 
   
   --uut: muu_TopWrapper 
-    uut: zookeeper_tcp_top_parallel_nkv
+    uut: muu_TopWrapper
     generic map ( IS_SIM => 1 )
     port map ( aclk           => clk,
 	       aresetn        => rstn,

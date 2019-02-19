@@ -60,9 +60,9 @@ module muu_TopWrapper #(
 			  output [7:0] 	    m_axis_tx_data_TKEEP,
 			  output [0:0] 	    m_axis_tx_data_TLAST,
 
-			  output reg 	    m_axis_tx_metadata_TVALID,
+			  output  	    m_axis_tx_metadata_TVALID,
 			  input 	    m_axis_tx_metadata_TREADY,
-			  output reg [15:0] m_axis_tx_metadata_TDATA,
+			  output  [31:0] m_axis_tx_metadata_TDATA,
 
 			  input 	    s_axis_tx_status_TVALID,
 			  output 	    s_axis_tx_status_TREADY,
@@ -601,7 +601,10 @@ module muu_TopWrapper #(
 
 // .S00_AXIS_TDATA({fromKvsData[63:0],fromKvsData[127:64]}),
     
-  
+  reg derMetaValid;
+  wire derMetaReady;
+  reg[15:0] derMetaData;
+  reg[15:0] derMetaLen;
 
     always @(posedge aclk) begin  
       if(reset) begin
@@ -616,32 +619,96 @@ module muu_TopWrapper #(
         end
       end
     end
+    
+    wire derOutValid;
+    wire derOutReady;
+    wire[128:0] derOutData;
+    wire derOutLast;
+    
+    assign derOutValid = fromKvsValid | injectValid;
+    assign fromKvsReady = derOutReady; 
+    assign derOutData = (injectValid==1 && fromKvsValid==0) ? {1'b1,injectWord} : {fromKvsLast,fromKvsData};
+    assign derOutLast = (injectValid==1 && fromKvsValid==0) ? 1 : fromKvsLast;
 
+    //axis_data_saf_kvs
         nukv_fifogen #(
             .DATA_SIZE(128+1),
             .ADDR_BITS(9)
-        ) fifo_lastbeforeout (
-                .clk(aclk),
-                .rst(reset),
-                .s_axis_tvalid(fromKvsValid | injectValid),
-                .s_axis_tready(fromKvsReady),
-                .s_axis_tdata((injectValid==1 && fromKvsValid==0) ? {1'b1,injectWord} : {fromKvsLast,fromKvsData}),  
+        ) fifo_lastdata (
+                .clk(aclk),//.s_axis_aclk(aclk),
+                .rst(reset),//.s_axis_aresetn(~reset),
+                .s_axis_tvalid(derOutValid),
+                .s_axis_tready(derOutReady),
+                .s_axis_tdata(derOutData),
+                //.s_axis_tdata(fromKvsData),
+                //.s_axis_tlast(fromKvsLast),  
                 .m_axis_tvalid(finalOutValid),
-                .m_axis_tready(finalOutReady),
+                .m_axis_tready(finalOutReady),                
                 .m_axis_tdata({finalOutLast,finalOutData})
-                ); 
+                //.m_axis_tdata(finalOutData),
+                //.m_axis_tlast(finalOutLast)
+                );
+                
+         nukv_fifogen #(
+                    .DATA_SIZE(32),
+                    .ADDR_BITS(4)
+                ) fifo_lastmeta (
+                        .clk(aclk),
+                        .rst(reset),
+                        .s_axis_tvalid(derMetaValid),
+                        .s_axis_tready(derMetaReady),
+                        .s_axis_tdata({derMetaLen,derMetaData}),  
+                        .m_axis_tvalid(m_axis_tx_metadata_TVALID),
+                        .m_axis_tready(m_axis_tx_metadata_TREADY),
+                        .m_axis_tdata(m_axis_tx_metadata_TDATA)
+                        );              
    
    
-   assign   m_axis_tx_data_TVALID = (is_first_output_cycle==0) ? finalOutValid : (finalOutValid && m_axis_tx_metadata_TREADY);
+   assign   m_axis_tx_data_TVALID =  finalOutValid ;
+   assign   m_axis_tx_data_TDATA = finalOutData[63:0];
+   assign   m_axis_tx_data_TKEEP = 8'b11111111;
+   assign   m_axis_tx_data_TLAST = finalOutLast;
+   assign   finalOutReady =  m_axis_tx_data_TREADY ;
+   
+/*   assign   m_axis_tx_data_TVALID = (is_first_output_cycle==0) ? finalOutValid : (finalOutValid && m_axis_tx_metadata_TREADY);
    assign   m_axis_tx_data_TDATA = finalOutData[63:0];
    assign   m_axis_tx_data_TKEEP = 8'b11111111;
    assign   m_axis_tx_data_TLAST = finalOutLast;
    assign   finalOutReady = (is_first_output_cycle==0) ? m_axis_tx_data_TREADY : (m_axis_tx_data_TREADY && m_axis_tx_metadata_TREADY);
-
-   //assign timerReady = is_first_output_cycle & finalOutValid & finalOutReady;
-      
    
+*/
+   //assign timerReady = is_first_output_cycle & finalOutValid & finalOutReady;
+    
    always @(posedge aclk) 
+     begin
+	if (aresetn == 0) begin
+	   is_first_output_cycle <= 1;
+	   derMetaValid <= 0;     
+     derMetaLen <= 0;  
+	end
+	else begin
+	   if (derMetaValid==1 && derMetaReady==1) begin
+	       derMetaValid <= 0;
+	   end
+
+     if (derOutValid==1 && derOutReady==1 ) begin
+      derMetaLen <= derMetaLen+8;
+     end
+	
+	   if (derOutValid==1 && derOutReady==1 && is_first_output_cycle==1) begin	      
+	      derMetaData <= derOutData[64 +: 16];
+	      is_first_output_cycle <= 0;	  
+          derMetaLen <= 8;
+	   end	  
+
+	   if (derOutReady==1 && derOutValid==1 && derOutLast==1) begin
+	       derMetaValid <= 1;
+	       is_first_output_cycle <= 1;
+	   end
+	end
+     end   
+   
+  /* always @(posedge aclk) 
      begin
 	if (aresetn == 0) begin
 	   is_first_output_cycle <= 1;
@@ -662,7 +729,7 @@ module muu_TopWrapper #(
 	      is_first_output_cycle <= 1;
 	   end
 	end
-     end
+     end*/
 
 
 /*

@@ -204,17 +204,17 @@ wire free_wipe_b;
 
 wire [63:0] key_data;
 wire key_last;
-(* mark_debug = "true" *)wire key_valid;
-(* mark_debug = "true" *)wire key_ready;
+wire key_valid;
+wire key_ready;
 
 wire [EXT_META_WIDTH-1:0] meta_data;
-(* mark_debug = "true" *)wire meta_valid;
-(* mark_debug = "true" *)wire meta_ready;
+wire meta_valid;
+wire meta_ready;
 
 
 wire [USER_BITS+63:0] tohash_data;
-(* mark_debug = "true" *)wire tohash_valid;
-(* mark_debug = "true" *)wire tohash_ready;
+wire tohash_valid;
+wire tohash_ready;
 
 wire [1+63:0] tosm_data;
 wire tosm_valid;
@@ -226,12 +226,12 @@ wire fromhash_valid;
 wire fromhash_ready;
 
 wire [DOUBLEHASH_WIDTH-1:0] hashaddr_data;
-(* mark_debug = "true" *)wire hashaddr_valid;
-(* mark_debug = "true" *)wire hashaddr_ready;
+wire hashaddr_valid;
+wire hashaddr_ready;
 
 wire[DOUBLEHASH_WIDTH-1:0] secondhash_data;
-(* mark_debug = "true" *)wire secondhash_valid;
-(* mark_debug = "true" *)wire secondhash_ready;
+wire secondhash_valid;
+wire secondhash_ready;
 
 wire[DOUBLEHASH_WIDTH-1:0] fromsecondhash_data;
 wire fromsecondhash_valid;
@@ -257,28 +257,28 @@ wire meta_b2_ready;
 
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] keywhash_data;
-(* mark_debug = "true" *)wire keywhash_valid;
-(* mark_debug = "true" *)wire keywhash_ready;
+wire keywhash_valid;
+wire keywhash_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] towrite_b_data;
-(* mark_debug = "true" *)wire towrite_b_valid;
-(* mark_debug = "true" *)wire towrite_b_ready;
+wire towrite_b_valid;
+wire towrite_b_ready;
 
 wire [16+KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] writeout_data;
-(* mark_debug = "true" *)wire writeout_valid;
-(* mark_debug = "true" *)wire writeout_ready;
+wire writeout_valid;
+wire writeout_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] writeout_b_data;
 wire writeout_b_valid;
 wire writeout_b_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_data;
-(* mark_debug = "true" *)wire fromset_valid;
-(* mark_debug = "true" *)wire fromset_ready;
+wire fromset_valid;
+wire fromset_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_b_data;
-(* mark_debug = "true" *)wire fromset_b_valid;
-(* mark_debug = "true" *)wire fromset_b_ready;
+wire fromset_b_valid;
+wire fromset_b_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] towrite_data;
 wire towrite_valid;
@@ -294,14 +294,14 @@ wire writefb_b_valid;
 wire writefb_b_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] feedbwhash_data;
-(* mark_debug = "true" *)wire feedbwhash_valid;
-(* mark_debug = "true" *)wire feedbwhash_ready;
+wire feedbwhash_valid;
+wire feedbwhash_ready;
 
 wire [VALUE_WIDTH-1:0] value_data;
 wire [15:0] value_length;
-(* mark_debug = "true" *)wire value_last;
-(* mark_debug = "true" *)wire value_valid;
-(* mark_debug = "true" *)wire value_ready;
+wire value_last;
+wire value_valid;
+wire value_ready;
 wire value_almost_full;
 
 wire [VALUE_WIDTH+16+1-1:0] value_b_data;
@@ -401,9 +401,9 @@ wire         zkm_b_valid;
 
 wire[127:0] final_out_data;
 wire[7:0] final_out_user;
-(* mark_debug = "true" *)wire final_out_valid;
-(* mark_debug = "true" *)wire final_out_ready;
-(* mark_debug = "true" *)wire final_out_last;
+wire final_out_valid;
+wire final_out_ready;
+wire final_out_last;
 
 reg sAxisFirst;
 reg sAxisSecond;
@@ -1321,8 +1321,8 @@ nukv_fifogen #(
     .m_axis_tready(mreq_ready_b)
 );
 
-(* mark_debug = "true" *) wire malloc_error_valid;
-(* mark_debug = "true" *) wire[7:0] malloc_error_state;
+ wire malloc_error_valid;
+ wire[7:0] malloc_error_state;
 
 nukv_Malloc #(
 				.IS_SIM(IS_SIM), 
@@ -1844,7 +1844,7 @@ reg outputIsReplResp;
 reg[31:0] timeCyclesBuf;
 reg[31:0] replWriteCyclesBuf;
 
-(* mark_debug = "true" *)reg outputErrorHead;
+reg outputErrorHead;
 
 always @(posedge clk) begin 
     if(rst) begin
