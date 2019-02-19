@@ -336,7 +336,7 @@ end
 assign ip_address_out = iph_ip_address;
 
 
-shortcut_toe_ip_201801 toe_inst (
+shortcut_to_ip_201801 toe_inst (
 // Data output
 .m_axis_tcp_data_TVALID(axi_toe_to_toe_slice_tvalid), // output AXI_M_Stream_TVALID
 .m_axis_tcp_data_TREADY(axi_toe_to_toe_slice_tready), // input AXI_M_Stream_TREADY
