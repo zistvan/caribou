@@ -402,7 +402,7 @@ module nukv_Malloc #(
 
             ST_ALLOC_PUSHREMAINDER: begin
                 
-                if (poppedpointer[63:32]>=neededsize) begin
+                if (poppedpointer[63:32]>=2*neededsize) begin
                     queuein[in_class] <= {poppedpointer[63:32]-neededsize, poppedpointer[31:0]+neededsize};
                     queuepush[in_class] <= 1;
                 end
