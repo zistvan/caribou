@@ -387,7 +387,7 @@ module muu_TopWrapper #(
 
         nukv_fifogen #(
             .DATA_SIZE(65),
-            .ADDR_BITS(5)
+            .ADDR_BITS(8)
         ) input_firstword_fifo_inst (
                 .clk(aclk),
                 .rst(reset),
@@ -405,7 +405,7 @@ module muu_TopWrapper #(
 
 
     
-   wire[127:0] debug_sess;
+    wire[127:0] debug_sess;
    muu_session_Top  #(
                         .USER_BITS(USER_BITS)
    ) muuSessionMngr (
@@ -436,7 +436,7 @@ module muu_TopWrapper #(
 					    .out_meta(sesspackMeta),
               .out_userid(sesspackUser),             
       
-					    .debug_out()
+					    .debug_out(debug_sess)
 					    );
 
     assign splitPreValid = sesspackValid;

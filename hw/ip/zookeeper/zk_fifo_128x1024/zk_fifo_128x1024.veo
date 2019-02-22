@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2018 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2019 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -55,15 +55,18 @@
 
 //----------- Begin Cut here for INSTANTIATION Template ---// INST_TAG
 zk_fifo_128x1024 your_instance_name (
-  .s_aclk(s_aclk),                  // input wire s_aclk
-  .s_aresetn(s_aresetn),            // input wire s_aresetn
-  .s_axis_tvalid(s_axis_tvalid),    // input wire s_axis_tvalid
-  .s_axis_tready(s_axis_tready),    // output wire s_axis_tready
-  .s_axis_tdata(s_axis_tdata),      // input wire [127 : 0] s_axis_tdata
-  .m_axis_tvalid(m_axis_tvalid),    // output wire m_axis_tvalid
-  .m_axis_tready(m_axis_tready),    // input wire m_axis_tready
-  .m_axis_tdata(m_axis_tdata),      // output wire [127 : 0] m_axis_tdata
-  .axis_prog_full(axis_prog_full)  // output wire axis_prog_full
+  .s_aclk(s_aclk),                    // input wire s_aclk
+  .s_aresetn(s_aresetn),              // input wire s_aresetn
+  .s_axis_tvalid(s_axis_tvalid),      // input wire s_axis_tvalid
+  .s_axis_tready(s_axis_tready),      // output wire s_axis_tready
+  .s_axis_tdata(s_axis_tdata),        // input wire [127 : 0] s_axis_tdata
+  .s_axis_tlast(s_axis_tlast),        // input wire s_axis_tlast
+  .m_axis_tvalid(m_axis_tvalid),      // output wire m_axis_tvalid
+  .m_axis_tready(m_axis_tready),      // input wire m_axis_tready
+  .m_axis_tdata(m_axis_tdata),        // output wire [127 : 0] m_axis_tdata
+  .m_axis_tlast(m_axis_tlast),        // output wire m_axis_tlast
+  .axis_data_count(axis_data_count),  // output wire [10 : 0] axis_data_count
+  .axis_prog_full(axis_prog_full)    // output wire axis_prog_full
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
