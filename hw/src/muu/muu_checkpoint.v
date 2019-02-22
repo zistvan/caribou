@@ -22,11 +22,11 @@ module muu_Checkpoint #(
 	parameter FIFO_BITS = 6,
 	parameter COST_BITS = 16,
 	parameter BURST_BITS = 12, 
-	parameter LIMIT_PER_USER = 8,
+	parameter LIMIT_PER_USER = 128, //8
 
-	parameter TB_DEFAULT_DEPTH = 160,
+	parameter TB_DEFAULT_DEPTH = 1024,//160,
 	parameter TB_DEFAULT_UPDFREQ = 1,
-	parameter TB_DEFAULT_UPDCOUNT = 2,
+	parameter TB_DEFAULT_UPDCOUNT = 32,//2,
 	parameter TB_DEFAULT_HEADER_SIZE = 2+7
 )
 (
