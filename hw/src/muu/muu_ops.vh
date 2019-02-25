@@ -49,6 +49,10 @@ localparam [3:0]
 	HTOP_GETCOND = 8,
 	HTOP_FLUSH = 4'hF, //(truncated from 8'hFF)
 
+	HTOP_PRE_INCR = 13, //DEDUP ONLY
+	HTOP_PRE_DECR = 14, //DEDUP ONLY
+
+
 	// these are not supported:
 	HTOP_SCAN = 9,
 	HTOP_SCANCOND = 10;

@@ -839,7 +839,7 @@ ip_handler_ip ip_handler_inst (
 .s_axis_raw_TKEEP(AXI_S_Stream_TKEEP), // input [7 : 0] AXI4Stream_S_TSTRB
 .s_axis_raw_TLAST(AXI_S_Stream_TLAST), // input [0 : 0] AXI4Stream_S_TLAST
 
-.regIpAddress_V(iph_ip_address),
+.myIpAddress_V(iph_ip_address),
 
 .aclk(aclk), // input aclk
 .aresetn(aresetn) // input aresetn
@@ -1010,8 +1010,8 @@ arp_server_subnet_ip arp_server_inst(
 .s_axis_arp_lookup_request_TREADY(axis_arp_lookup_request_TREADY),
 .s_axis_arp_lookup_request_TDATA(axis_arp_lookup_request_TDATA),
 
-.regMacAddress_V(arp_mac_address),
-.regIpAddress_V(arp_ip_address),
+.myMacAddress_V(arp_mac_address),
+.myIpAddress_V(arp_ip_address),
 
 .aclk(aclk), // input aclk
 .aresetn(aresetn) // input aresetn

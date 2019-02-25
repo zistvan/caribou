@@ -256,9 +256,9 @@ module muu_TopWrapper #(
    wire [127:0] 			    toKvsData;
    wire [USER_BITS-1:0]       toKvsUserId;
    
-   (* mark_debug = "true" *)wire 				    fromKvsValid;
-   (* mark_debug = "true" *)wire                     fromKvsReady;
-   (* mark_debug = "true" *)wire                     fromKvsLast;
+   wire 				    fromKvsValid;
+   wire                     fromKvsReady;
+   wire                     fromKvsLast;
    wire [127:0]             fromKvsData;
    wire [USER_BITS-1:0]             fromKvsUser;
 
@@ -308,9 +308,9 @@ module muu_TopWrapper #(
    wire 				    splitPreReady;
    wire [3+128:0] 			    splitPreDataMerged;
 
-   (* mark_debug = "true" *)wire 				    splitInValid;
-   (* mark_debug = "true" *)wire 				    splitInLast;
-   (* mark_debug = "true" *)wire 				    splitInReady;
+   wire 				    splitInValid;
+   wire 				    splitInLast;
+   wire 				    splitInReady;
    wire [63:0] 				    splitInData;
    wire [63:0] 				    splitInMeta;
    wire [128+USER_BITS:0] 			    splitInDataMerged;
@@ -498,7 +498,7 @@ module muu_TopWrapper #(
 	reg injectValid;
   reg[127:0] injectWord;		
 
-   muu_Top_Module_Repl
+   muu_Top_Module_Dedup
    #(   
             .IS_SIM(IS_SIM),
             .USER_BITS(USER_BITS)
