@@ -51,7 +51,9 @@ module muu_Value_Get #(
 	output reg 			output_last,
 	input  wire         output_ready,
 
-	input wire 			scan_mode
+	input wire 			scan_mode,
+
+	input wire[31:0] malloc_stat_data
 
 );
 
@@ -350,7 +352,8 @@ always @(posedge clk) begin
 					cond_ready <= hasvalue & is_forme;
 
 					output_valid <= 1;
-					output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]};
+					//output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]}; // prints out the pointer and length
+					output_word <= {32'h0,malloc_stat_data};
 
 					first_value_word <= 1;
 
@@ -375,7 +378,8 @@ always @(posedge clk) begin
 			ST_NO_HEADER: begin
 				if (output_ready==1) begin
 					output_valid <= sendAnswerReg;
-					output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]};
+					//output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]}; // prints out the pointer and length
+					output_word <= {32'h0,malloc_stat_data};
 
 					first_value_word <= 1;
 

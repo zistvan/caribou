@@ -171,22 +171,22 @@ wire [39:0] upd_wrcmd_data;
 wire        upd_wrcmd_ready;
 
 wire [15:0] mreq_data;
-wire mreq_valid;
-wire mreq_ready;
+(* mark_debug = "true" *)wire mreq_valid;
+(* mark_debug = "true" *)wire mreq_ready;
 
 wire [15:0] mreq_data_b;
 wire mreq_valid_b;
 wire mreq_ready_b;
 
 wire [31:0] malloc_data;
-wire malloc_valid;
-wire malloc_failed;
-wire malloc_ready;
+(* mark_debug = "true" *)wire malloc_valid;
+(* mark_debug = "true" *)wire malloc_failed;
+(* mark_debug = "true" *)wire malloc_ready;
 
 wire [31:0] free_data;
 wire [15:0] free_size;
-wire free_valid;
-wire free_ready;
+(* mark_debug = "true" *)wire free_valid;
+(* mark_debug = "true" *)wire free_ready;
 wire free_wipe;
 
 wire [31:0] malloc_data_b;
@@ -204,17 +204,17 @@ wire free_wipe_b;
 
 wire [63:0] key_data;
 wire key_last;
-wire key_valid;
-wire key_ready;
+(* mark_debug = "true" *)wire key_valid;
+(* mark_debug = "true" *)wire key_ready;
 
 wire [EXT_META_WIDTH-1:0] meta_data;
-wire meta_valid;
-wire meta_ready;
+(* mark_debug = "true" *)wire meta_valid;
+(* mark_debug = "true" *)wire meta_ready;
 
 
 wire [USER_BITS+63:0] tohash_data;
-wire tohash_valid;
-wire tohash_ready;
+(* mark_debug = "true" *)wire tohash_valid;
+(* mark_debug = "true" *)wire tohash_ready;
 
 wire [1+63:0] tosm_data;
 wire tosm_valid;
@@ -261,20 +261,20 @@ wire keywhash_valid;
 wire keywhash_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] towrite_b_data;
-wire towrite_b_valid;
-wire towrite_b_ready;
+(* mark_debug = "true" *)wire towrite_b_valid;
+(* mark_debug = "true" *)wire towrite_b_ready;
 
 wire [16+KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] writeout_data;
 wire writeout_valid;
 wire writeout_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] writeout_b_data;
-wire writeout_b_valid;
-wire writeout_b_ready;
+(* mark_debug = "true" *)wire writeout_b_valid;
+(* mark_debug = "true" *)wire writeout_b_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_data;
-wire fromset_valid;
-wire fromset_ready;
+(* mark_debug = "true" *)wire fromset_valid;
+(* mark_debug = "true" *)wire fromset_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_b_data;
 wire fromset_b_valid;
@@ -285,8 +285,8 @@ wire towrite_valid;
 wire towrite_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH-1:0] writefb_data;
-wire writefb_valid;
-wire writefb_ready;
+(* mark_debug = "true" *)wire writefb_valid;
+(* mark_debug = "true" *)wire writefb_ready;
 
 
 wire [KEY_WIDTH+EXT_META_WIDTH-1:0] writefb_b_data;
@@ -299,9 +299,9 @@ wire feedbwhash_ready;
 
 wire [VALUE_WIDTH-1:0] value_data;
 wire [15:0] value_length;
-wire value_last;
-wire value_valid;
-wire value_ready;
+(* mark_debug = "true" *)wire value_last;
+(* mark_debug = "true" *)wire value_valid;
+(* mark_debug = "true" *)wire value_ready;
 wire value_almost_full;
 
 wire [VALUE_WIDTH+16+1-1:0] value_b_data;
@@ -1323,6 +1323,8 @@ nukv_fifogen #(
 
  wire malloc_error_valid;
  wire[7:0] malloc_error_state;
+ wire[31:0] malloc_stat_size;
+
 
 nukv_Malloc #(
 				.IS_SIM(IS_SIM), 
@@ -1396,7 +1398,10 @@ nukv_Malloc #(
 	.scan_pause(SUPPORT_SCANS==1 ? scan_pause : 0),
 
     .error_memory(malloc_error_valid),
-    .error_state(malloc_error_state)
+    .error_state(malloc_error_state),
+    
+    .stat_size(malloc_stat_size)
+
 );
 
 assign scan_mode_on = 0;      
@@ -1835,7 +1840,9 @@ muu_Value_Get #(
 	.output_ready(m_axis_tready),
 	.output_last(m_axis_tlast),
 
-	.scan_mode(scan_mode_on)
+	.scan_mode(scan_mode_on),
+		    
+    .malloc_stat_data(malloc_stat_size)
 
 );
 

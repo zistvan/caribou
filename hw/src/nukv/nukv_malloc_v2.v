@@ -94,7 +94,9 @@ module nukv_Malloc #(
 	input  wire         b_wrcmd_ready,
 
     output reg error_memory,
-    output reg[7:0] error_state
+    output reg[7:0] error_state,
+
+    output reg[31:0] stat_size
 
 	// memory interface...
 	
@@ -1049,6 +1051,30 @@ module nukv_Malloc #(
     		
     	end
     end
+
+    reg[47:0] stat_allocated;
+    reg[47:0] stat_freed;
+
+    reg[31:0] stat_compute;
+
+    always @(posedge clk) begin  
+        if (rst || (free_valid==1 && free_ready==1 && free_wipe==1)) begin
+            stat_allocated <= 0;
+            stat_freed <= 0;
+        end else begin
+            if (free_ready==1 && free_valid==1) begin
+                stat_freed <= stat_freed+free_size;
+            end
+
+            if (req_valid==1 && req_ready==1) begin
+                stat_allocated <= stat_allocated + req_data;
+            end
+
+            stat_compute <= stat_allocated - stat_freed;
+        end
+
+        stat_size <= stat_compute;        
+    end    
 
     
 endmodule
