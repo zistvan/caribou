@@ -680,7 +680,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= writebackEntry[KEY_WIDTH +: 32];
-									free_size <= writebackEntry[KEY_WIDTH+32 +: 16];
+									free_size <= {writebackEntry[KEY_WIDTH+32 +: 13],3'b000};
 
 								end else if (opmode==HTOP_SETNEXT && writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]==0) begin
 									//nothing prepared yet, put pointer there
@@ -694,7 +694,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: 32];
-									free_size <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH+32 +: 16];
+									free_size <= {writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH+32 +: 13],3'b000};
 								end
 
 							end else begin
@@ -727,7 +727,7 @@ always @(posedge clk) begin
 								free_valid <= 1;
 								free_wipe <= 0;
 								free_pointer <= writebackEntry[KEY_WIDTH +: 32];
-								free_size <= writebackEntry[KEY_WIDTH+32 +: 16];
+								free_size <= {writebackEntry[KEY_WIDTH+32 +: 13], 3'b000};
 
 								state <= ST_WRITEDATA;
 
