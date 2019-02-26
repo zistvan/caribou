@@ -723,7 +723,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: 32];
-									free_size <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH+32 +: 16];
+									free_size <= {writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH+32 +: 13],3'b000};
 								end
 
 							end else begin
@@ -789,7 +789,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= mallocRegData;
-									free_size <= inputValueSize;
+									free_size <= {inputValueSize[12:0],3'b000};
 
 									writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH] <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]+1; // increment the count of dependent values
 									prev_pointer <= writebackEntry[KEY_WIDTH +: VALPOINTER_WIDTH];
@@ -826,7 +826,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: 32];
-									free_size <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH+32 +: 16];
+									free_size <= {writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH+32 +: 13],3'b000};
 
 									writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH] <= writebackEntry[KEY_WIDTH+VALPOINTER_WIDTH +: VALPOINTER_WIDTH]-1; // decrement the count of dependent values
 
@@ -865,7 +865,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= writebackEntry[KEY_WIDTH +: 32];
-									free_size <= writebackEntry[KEY_WIDTH+32 +: 16];
+									free_size <= {writebackEntry[KEY_WIDTH+32 +: 13],3'b000};
 								end
 
 								writebackEntry[KEY_WIDTH +: HEADER_WIDTH] <= 0;
@@ -894,7 +894,7 @@ always @(posedge clk) begin
 									free_valid <= 1;
 									free_wipe <= 0;
 									free_pointer <= writebackEntry[KEY_WIDTH +: 32];
-									free_size <= writebackEntry[KEY_WIDTH+32 +: 16];									
+									free_size <= {writebackEntry[KEY_WIDTH+32 +: 13],3'b000};									
 								end
 
 								state <= ST_WRITEDATA;
