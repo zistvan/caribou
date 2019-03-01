@@ -25,7 +25,7 @@ module muu_HT_Write_Dedup #(
 	parameter META_WIDTH = 96,
 	parameter DOUBLEHASH_WIDTH = 64,
 	parameter MEMORY_WIDTH = 512,
-	parameter FASTFORWARD_BITS = 5,
+	parameter FASTFORWARD_BITS = 6,
 	parameter MEM_WRITE_WAIT = 512,
 	parameter MEMADDR_WIDTH = 21,
 	parameter IS_SIM = 0,
@@ -111,10 +111,10 @@ reg [FASTFORWARD_BITS-1:0] ff_cnt;
 reg [FASTFORWARD_BITS-1:0] pos_ff;
 
 (* ram_style = "block" *) reg [USER_BITS+KEY_WIDTH+HEADER_WIDTH-1:0] kicked_keys [0:2**FASTFORWARD_BITS]; 
-reg [FASTFORWARD_BITS-1:0] kk_head;
-reg [FASTFORWARD_BITS-1:0] kk_tail;
-reg [FASTFORWARD_BITS-1:0] kk_cnt;
-reg [FASTFORWARD_BITS-1:0] pos_kk;
+(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] kk_head;
+(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] kk_tail;
+(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] kk_cnt;
+(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] pos_kk;
 
 reg [1:0] found_ff;
 reg [1:0] found_addr_ff;
@@ -454,7 +454,7 @@ always @(posedge clk) begin
 								found_kk_pos <= pos_kk-1;
 								kicked_keys_found_reg <= kicked_keys_pos_reg;
 
-								if (op_retry==1 && (opmode==HTOP_SETNEXT || opmode==HTOP_SETCUR) && pos_kk==kk_tail+1) begin
+								if (op_retry==1 && (opmode==HTOP_SETNEXT || opmode==HTOP_SETCUR) && pos_kk==(kk_tail+1)%2**FASTFORWARD_BITS) begin
 									oldpointer <= kicked_keys_pos_reg[KEY_WIDTH+31:KEY_WIDTH];
 									kk_cnt <= kk_cnt-1;
 									kk_tail <= kk_tail +1;

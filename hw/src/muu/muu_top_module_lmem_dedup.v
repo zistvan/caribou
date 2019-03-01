@@ -1029,7 +1029,7 @@ assign hash_expand_2 = {32'h0,fromhash_data[32+HASHTABLE_MEM_SIZE-1:32]} ^ {32'h
 
 nukv_fifogen #(
     .DATA_SIZE(KEY_WIDTH+USER_BITS),
-    .ADDR_BITS(5)
+    .ADDR_BITS(6)
 ) fifo_key_fromwritetohash2 (
     .clk(clk),
     .rst(rst),
@@ -1080,7 +1080,7 @@ assign secondhash_expand_2 = {32'h0,secondhash_data[32+HASHTABLE_MEM_SIZE-1:32]}
 
 nukv_fifogen #(
     .DATA_SIZE(DOUBLEHASH_WIDTH),
-    .ADDR_BITS(5)
+    .ADDR_BITS(6)
 ) fifo_from_hash2 (
     .clk(clk),
     .rst(rst),
@@ -1229,7 +1229,7 @@ nukv_fifogen #(
 
 nukv_fifogen #(
     .DATA_SIZE(KEY_WIDTH+EXT_META_WIDTH),
-    .ADDR_BITS(6)
+    .ADDR_BITS(7)
 ) fifo_feedback_delayer (
     .clk(clk),
     .rst(rst),

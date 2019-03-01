@@ -106,22 +106,24 @@ module muu_HT_Read #(
     					selectInput <= selectInputNext;
     					selectInputNext <= ~selectInputNext;
 
-    					if (selectInputNext==1 && input_valid==0 && feedback_valid==1) begin
+    					if (selectInputNext==1 && feedback_valid==1) begin
     						selectInput <= 0;
     						selectInputNext <= 1;    						
-    					end
+                            state <= ST_ISSUE_READ_ONE;     
+
+    					end else if (selectInputNext==1 && input_valid==1) begin
+                            state <= ST_ISSUE_READ_ONE;                         
+
+                        end
 
     					if (selectInputNext==0 && input_valid==1 && feedback_valid==0) begin
     						selectInput <= 1;
-    						selectInputNext <= 0;    						
-    					end
+    						selectInputNext <= 0;    		                            				
+                            state <= ST_ISSUE_READ_ONE;                         
 
-    					if (selectInput==1 && input_valid==1) begin
+    					end else if (selectInputNext==0 && feedback_valid==1) begin
     						state <= ST_ISSUE_READ_ONE;    						
-    					end
 
-						if (selectInput==0 && feedback_valid==1) begin
-    						state <= ST_ISSUE_READ_ONE;    						
     					end    					
 
     				end
