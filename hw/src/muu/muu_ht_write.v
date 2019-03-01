@@ -444,7 +444,7 @@ always @(posedge clk) begin
 								found_kk_pos <= pos_kk-1;
 								kicked_keys_found_reg <= kicked_keys_pos_reg;
 
-								if (op_retry==1 && (opmode==HTOP_SETNEXT || opmode==HTOP_SETCUR) && pos_kk==kk_tail+1) begin
+								if (op_retry==1 && (opmode==HTOP_SETNEXT || opmode==HTOP_SETCUR) && pos_kk==(kk_tail+1)%2**FASTFORWARD_BITS) begin
 									oldpointer <= kicked_keys_pos_reg[KEY_WIDTH+31:KEY_WIDTH];
 									kk_cnt <= kk_cnt-1;
 									kk_tail <= kk_tail +1;
