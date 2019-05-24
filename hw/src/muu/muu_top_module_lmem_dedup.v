@@ -154,8 +154,8 @@ parameter SUPPORT_SCANS = 0;
 
 parameter FILTER_ENABLED_NUM = FILTER_REGEX_PARA + FILTER_PRED_CNT;
 
-wire [31:0] rdcmd_data;
-wire        rdcmd_valid;
+(* mark_debug = "true" *)wire [31:0] rdcmd_data;
+(* mark_debug = "true" *)wire        rdcmd_valid;
 wire        rdcmd_stall;
 wire        rdcmd_ready;
 
@@ -213,7 +213,7 @@ wire [EXT_META_WIDTH-1:0] meta_data;
 (* mark_debug = "true" *)wire meta_ready;
 
 
-wire [USER_BITS+63:0] tohash_data;
+wire [127:0] tohash_data;
 (* mark_debug = "true" *)wire tohash_valid;
 (* mark_debug = "true" *)wire tohash_ready;
 
@@ -375,7 +375,7 @@ wire sh_in_buf_ready;
 wire sh_in_ready;
 wire sh_in_valid;
 wire sh_in_choice;
-wire[63+USER_BITS:0] sh_in_data;
+wire[127:0] sh_in_data;
 
 wire write_feedback_channel_ready;
 
@@ -647,17 +647,22 @@ nukv_fifogen #(
     .m_axis_tready(tosm_ready)
 );
 
+(* mark_debug = "true" *)wire value_mainbuf_ready;
+(* mark_debug = "true" *)wire value_shabuf_ready;
+
+assign value_ready = value_mainbuf_ready & value_shabuf_ready;
+
 nukv_fifogen #(
     .DATA_SIZE(VALUE_WIDTH+16+1),
-    .ADDR_BITS(8) //!!!
+    .ADDR_BITS(10) //!!! 16* 2^6
 ) fifo_value (
     .clk(clk),
     .rst(rst),
     
     .s_axis_tdata({value_last, value_length, value_data}),
-    .s_axis_tvalid(value_valid),
-    .s_axis_tready(value_ready),
-    .s_axis_talmostfull(value_almost_full),
+    .s_axis_tvalid(value_valid & value_ready),
+    .s_axis_tready(value_mainbuf_ready),
+    .s_axis_talmostfull(),
     
     .m_axis_tdata(value_b_data),
     .m_axis_tvalid(value_b_valid),
@@ -673,16 +678,18 @@ wire[63:0] value_hash_data;
 (* mark_debug = "true" *)wire value_hash_valid;
 (* mark_debug = "true" *)wire value_hash_ready;
 
+assign value_almost_full = value_prehash_valid & ~value_prehash_ready;
+
 nukv_fifogen #(
     .DATA_SIZE(513),
-    .ADDR_BITS(8) //!!!
+    .ADDR_BITS(4) //!!!
 ) fifo_value_hash (
     .clk(clk),
     .rst(rst),
     
     .s_axis_tdata({value_last, value_data}),
     .s_axis_tvalid(value_valid & value_ready),
-    .s_axis_tready(),
+    .s_axis_tready(value_shabuf_ready),
     .s_axis_talmostfull(),
     
     .m_axis_tdata({value_prehash_last,value_prehash_data}),
@@ -965,7 +972,7 @@ nukv_fifogen #(
     .s_axis_tvalid(cmd_out_valid_g),
     .s_axis_tready(cmd_out_key_ready),
     
-    .m_axis_tdata(tohash_data),
+    .m_axis_tdata(tohash_data[KEY_WIDTH+USER_BITS-1:0]),
     .m_axis_tvalid(tohash_valid),
     .m_axis_tready(tohash_ready)
 );
@@ -973,13 +980,14 @@ nukv_fifogen #(
 assign value_b_length = value_b_data[VALUE_WIDTH +: 16];
 assign value_b_last = value_b_data[VALUE_WIDTH+16];
 
+assign tohash_data[127:KEY_WIDTH+USER_BITS] = 0;
 
 wire [31:0] h1addr1;
 wire [31:0] h1addr2;
 wire [USER_BITS-1:0] h1user;
 assign h1user = tohash_data[KEY_WIDTH +: USER_BITS];
-assign h1addr1 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h1user,tohash_data[0 +: HASHTABLE_MEM_SIZE] ^ tohash_data[64-HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
-assign h1addr2 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h1user,tohash_data[0 +: HASHTABLE_MEM_SIZE] ^ tohash_data[HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
+assign h1addr1 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h1user,tohash_data[0 +: HASHTABLE_MEM_SIZE]^tohash_data[2*HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
+assign h1addr2 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h1user,tohash_data[HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
 
 assign fromhash_valid = tohash_valid;
 assign tohash_ready = fromhash_ready;
@@ -1038,17 +1046,19 @@ nukv_fifogen #(
     .s_axis_tvalid(write_feedback_channel_ready & writefb_valid),
     .s_axis_tready(sh_in_buf_ready),
     
-    .m_axis_tdata(sh_in_data),
+    .m_axis_tdata(sh_in_data[KEY_WIDTH+USER_BITS-1:0]),
     .m_axis_tvalid(sh_in_valid),
     .m_axis_tready(sh_in_ready)
 );
+
+assign sh_in_data[127:KEY_WIDTH+USER_BITS] = 0;
 
 wire [31:0] h2addr1;
 wire [31:0] h2addr2;
 wire [USER_BITS-1:0] h2user;
 assign h2user = sh_in_data[KEY_WIDTH +: USER_BITS];
-assign h2addr1 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h2user,sh_in_data[0 +: HASHTABLE_MEM_SIZE] ^ sh_in_data[64-HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
-assign h2addr2 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h2user,sh_in_data[0 +: HASHTABLE_MEM_SIZE] ^ sh_in_data[HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
+assign h2addr1 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h2user,sh_in_data[0 +: HASHTABLE_MEM_SIZE]^sh_in_data[2*HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
+assign h2addr2 = {{32-USER_BITS-HASHTABLE_MEM_SIZE{1'b0}},h2user,sh_in_data[HASHTABLE_MEM_SIZE +: HASHTABLE_MEM_SIZE]};
 
 assign secondhash_valid = sh_in_valid;
 assign sh_in_ready = secondhash_ready;

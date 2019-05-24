@@ -119,15 +119,14 @@ reg [FASTFORWARD_BITS-1:0] pos_ff;
 reg [1:0] found_ff;
 reg [1:0] found_addr_ff;
 reg [1:0] empty_ff;
-reg [FASTFORWARD_BITS-1:0] found_ff_pos;
-reg [1:0] found_ff_idx;
-reg [1:0] empty_ff_idx;
+reg [1:0] found_ff_idx [0:1];
+reg [1:0] empty_ff_idx [0:1];
 reg found_kk;
 reg [FASTFORWARD_BITS-1:0] found_kk_pos;
 reg [1:0] found_mem;
-reg [1:0] found_mem_idx;
+reg [1:0] found_mem_idx [0:1];
 reg [1:0] empty_mem;
-reg [1:0] empty_mem_idx;
+reg [1:0] empty_mem_idx [0:1];
 
 reg [31:0] oldpointer;
 
@@ -175,7 +174,7 @@ integer c;
 integer x;
 
 reg[USER_BITS+MEMORY_WIDTH-1:0] fastforward_mem_pos_reg;
-reg[USER_BITS+MEMORY_WIDTH-1:0] fastforward_mem_found_reg;
+reg[USER_BITS+MEMORY_WIDTH-1:0] fastforward_mem_found_reg [0:1];
 reg [USER_BITS+KEY_WIDTH+HEADER_WIDTH-1:0] kicked_keys_pos_reg;
 reg [USER_BITS+KEY_WIDTH+HEADER_WIDTH-1:0] kicked_keys_found_reg;
 
@@ -189,7 +188,7 @@ reg kicked_keys_write_valid;
 
 reg[511:0] write_data_prep;
 
-reg[MEMORY_WIDTH-1:0] rdMemWord [1:2];
+reg[MEMORY_WIDTH-1:0] rdMemWord [0:1];
 
 reg mallocRegValid;
 reg[31:0] mallocRegData;
@@ -198,6 +197,10 @@ reg mallocRegFail;
 reg[15:0] inputValueSize;
 
 reg rst_regd; 
+
+reg[4:0] random_num;
+reg random_pick;
+reg[1:0] random_idx;
 
 always @(posedge clk) begin
 
@@ -234,13 +237,25 @@ always @(posedge clk) begin
 
 		malloc_ready <= 0;
 
-		empty_ff_idx <= 0;
-		empty_mem_idx <= 0;
+		empty_ff_idx[0] <= 0;
+		empty_mem_idx[0] <= 0;
+		empty_ff_idx[1] <= 0;
+		empty_mem_idx[1] <= 0;
 
 		prev_opmode <= HTOP_IGNORE;
 
+		random_num <= 5'b10101;
+
 	end
 	else begin
+
+		random_num <= { random_num[3:0], random_num[4] ^ random_num[3] };
+		if (random_num==5'b00000 || random_num==5'b11111) begin
+			random_num <= {ff_head[3:0],1'b1};
+		end	
+
+		random_pick <= random_num[0];
+		random_idx <= random_num[2:1];
 
 		fastforward_mem_pos_reg <= fastforward_mem[pos_ff];		
 		kicked_keys_pos_reg <= kicked_keys[pos_kk];
@@ -381,11 +396,11 @@ always @(posedge clk) begin
 
 			ST_CHECK_FF: begin
 				if (pos_ff==(ff_head+1)%2**FASTFORWARD_BITS && pos_kk==(kk_head+1)%2**FASTFORWARD_BITS) begin
-					if (found_addr_ff!=0) begin
-						state <= ST_SKIP_MEM;
-					end else begin
+					//if (found_addr_ff!=0) begin
+					//	state <= ST_SKIP_MEM;
+					//end else begin
 						state <= ST_CHECK_MEM;					
-					end
+					//end
 				end else begin
 
 					if (pos_ff!=(ff_head+1)%2**FASTFORWARD_BITS) begin
@@ -393,49 +408,41 @@ always @(posedge clk) begin
 
 						if (pos_ff!=ff_tail) begin
 							if (fastforward_addr[pos_ff-1]==curr_hash1 && fastforward_mem_pos_reg[MEMORY_WIDTH+USER_BITS-1:MEMORY_WIDTH]==curr_user) begin
-								found_addr_ff <= 1;
-								found_ff_pos <= pos_ff-1;
-								fastforward_mem_found_reg <= fastforward_mem_pos_reg;
-								found_ff_idx <= 0;
-								empty_ff <= 0;
+								found_addr_ff[0] <= 1;
+								fastforward_mem_found_reg[0] <= fastforward_mem_pos_reg;
+								found_ff_idx[0] <= 0;
+								empty_ff[0] <= 0;
 
 								// compare to this data
 								for (c=0; c<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH); c=c+1) begin       
 									if (fastforward_mem_pos_reg[(c)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==inputReg[KEY_WIDTH-1:0]) begin
-										found_ff <= 1;
-										found_ff_pos <= pos_ff-1;
-										found_ff_idx <= c;
-									end else begin
-										found_ff <= 0;
-									end
+										found_ff[0] <= 1;
+										found_ff_idx[0] <= c;
+									end 
 
 									if (fastforward_mem_pos_reg[(c)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==0) begin
-										empty_ff_idx <= c;
-										empty_ff <= 1;
+										empty_ff_idx[0] <= c;
+										empty_ff[0] <= 1;
 									end
 	    						end
 							end
 
 							if (fastforward_addr[pos_ff-1]==curr_hash2 && fastforward_mem_pos_reg[MEMORY_WIDTH+USER_BITS-1:MEMORY_WIDTH]==curr_user) begin
-								found_addr_ff <= 2;
-								found_ff_pos <= pos_ff-1;
-								fastforward_mem_found_reg <= fastforward_mem_pos_reg;
-								found_ff_idx <= 0;
-								empty_ff <= 0;
+								found_addr_ff[1] <= 1;
+								fastforward_mem_found_reg[1] <= fastforward_mem_pos_reg;
+								found_ff_idx[1] <= 0;
+								empty_ff[1] <= 0;
 
 								// compare to this data
 								for (c=0; c<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH); c=c+1) begin       
 									if (fastforward_mem_pos_reg[(c)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==inputReg[KEY_WIDTH-1:0]) begin
-										found_ff <= 2;
-										found_ff_pos <= pos_ff-1;
-										found_ff_idx <= c;
-									end else begin
-										found_ff <= 0;
-									end
+										found_ff[1] <= 1;
+										found_ff_idx[1] <= c;
+									end 
 
 									if (fastforward_mem_pos_reg[(c)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==0) begin
-										empty_ff_idx <= c;
-										empty_ff <= 2;
+										empty_ff_idx[1] <= c;
+										empty_ff[1] <= 1;
 									end
 	    						end
 							end
@@ -496,12 +503,12 @@ always @(posedge clk) begin
 
 					for (x=0; x<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH); x=x+1) begin       
 						if (rd_data[(x)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==inputReg[KEY_WIDTH-1:0]) begin
-							found_mem <= 1;
-							found_mem_idx <= x;
+							found_mem[0] <= 1;
+							found_mem_idx[0] <= x;
 						end
 						if (rd_data[(x)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==0) begin
-							empty_mem_idx <= x;
-							empty_mem <= 1;
+							empty_mem_idx[0] <= x;
+							empty_mem[0] <= 1;
 						end
     				end
 
@@ -523,7 +530,7 @@ always @(posedge clk) begin
 
     				rd_ready <= 1;
 
-    				rdMemWord[1] <= rd_data;
+    				rdMemWord[0] <= rd_data;
 
 					state <= ST_CHECK_MEM_TWO;
 				end
@@ -533,18 +540,18 @@ always @(posedge clk) begin
 				if (rd_ready==0 && rd_valid==1) begin
 					// compare to this data
 
-					rdMemWord[2] <= rd_data;
+					rdMemWord[1] <= rd_data;
 
 					for (x=0; x<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH); x=x+1) begin       
 						if (rd_data[(x)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==inputReg[KEY_WIDTH-1:0]) begin
-							found_mem <= 2;
-							found_mem_idx <= x;
+							found_mem[1] <= 1;
+							found_mem_idx[1] <= x;
 
 
 						end
-						if (rd_data[(x)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==0 && empty_mem==0) begin
-							empty_mem_idx <= x;
-							empty_mem <= 2;
+						if (rd_data[(x)*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH]==0 && empty_mem[1]==0) begin
+							empty_mem_idx[1] <= x;
+							empty_mem[1] <= 1;
 						end
     				end
 
@@ -567,83 +574,140 @@ always @(posedge clk) begin
 					writebackLine <= 0;
 					writebackToKK <= 1;
 
-				end else if (found_addr_ff!=0) begin
-				
-					writebackEntry <= {curr_user , fastforward_mem_found_reg[found_ff_idx*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
-					writebackLine <= fastforward_mem_found_reg;
-
-					if (found_ff==1) begin
+				end else if (found_addr_ff!=0 && found_ff!=0) begin
+									
+					if (found_ff[0]==1) begin
 						writebackAddr <= curr_hash1;
-						writebackIdx <= found_ff_idx;
+						writebackIdx <= found_ff_idx[0];
 						writebackKeyMatch <= 1;
+						writebackEntry <= {curr_user , fastforward_mem_found_reg[0][found_ff_idx[0]*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+						writebackLine <= fastforward_mem_found_reg[0];
 
-					end else if (found_ff==2) begin
+					end else if (found_ff[1]==1) begin
 						writebackAddr <= curr_hash2;
-						writebackIdx <= found_ff_idx;
+						writebackIdx <= found_ff_idx[1];
 						writebackKeyMatch <= 1;
+						writebackEntry <= {curr_user , fastforward_mem_found_reg[1][found_ff_idx[1]*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+						writebackLine <= fastforward_mem_found_reg[1];
+					end 
 
-					end else if (empty_ff==1) begin
+				end else if (found_addr_ff[0]==0 && found_mem[0]==1) begin
+
+					writebackAddr <= curr_hash1;
+					writebackIdx <= found_mem_idx[0];
+					writebackEntry <= {curr_user, rdMemWord[0][found_mem_idx[0]*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};			
+					writebackKeyMatch <= 1;
+					writebackLine <= rdMemWord[0];
+
+				end else if (found_addr_ff[1]==0 && found_mem[1]==1) begin
+
+					writebackAddr <= curr_hash2;
+					writebackIdx <= found_mem_idx[1];
+					writebackEntry <= {curr_user, rdMemWord[1][found_mem_idx[1]*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};			
+					writebackKeyMatch <= 1;
+					writebackLine <= rdMemWord[1];
+
+				end else if (((~found_addr_ff) & empty_mem)!=0) begin
+
+					if (found_addr_ff[0]==0 && empty_mem[0]==1) begin
 						writebackAddr <= curr_hash1;
-						writebackIdx <= empty_ff_idx;
-						writebackEntry <= 0;
+						writebackIdx <= empty_mem_idx[0];
+						writebackLine <= rdMemWord[0];	
 						writebackKeyMatch <= 0;
-
-					end else if (empty_ff==2) begin
-						writebackAddr <= curr_hash2;
-						writebackIdx <= empty_ff_idx;
 						writebackEntry <= 0;
-						writebackKeyMatch <= 0;
 					end else begin
+						writebackAddr <= curr_hash2;
+						writebackIdx <= empty_mem_idx[1];
+						writebackLine <= rdMemWord[1];	
+						writebackKeyMatch <= 0;
+						writebackEntry <= 0;
+					end
 
-						writebackAddr <= found_addr_ff==1 ? curr_hash1 : curr_hash2;
+				end else if (random_pick==0) begin
 
-						if (ff_tail[1:0]<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH)) begin						
-							writebackIdx <= ff_tail[1:0];
-							writebackEntry <= {curr_user, fastforward_mem_found_reg[ff_tail[1:0]*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+
+					if (found_addr_ff[0]==1) begin 
+
+						writebackLine <= fastforward_mem_found_reg[0];
+
+						if (empty_ff[0]==1) begin
+							writebackAddr <= curr_hash1;
+							writebackIdx <= empty_ff_idx[0];
+							writebackEntry <= 0;
+							writebackKeyMatch <= 0;
+						end else begin
+							writebackAddr <= curr_hash1;
+
+							if (random_idx<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH)) begin						
+								writebackIdx <= random_idx;
+								writebackEntry <= {curr_user, fastforward_mem_found_reg[0][random_idx*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};								
+							end else begin
+								writebackIdx <= 0;
+								writebackEntry <= {curr_user, fastforward_mem_found_reg[0][0*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+							end
+
+							writebackKeyMatch <= 0;
+							writebackNeedsKick <= 1;
+						end
+
+					end else begin
+						writebackAddr <= curr_hash1;
+
+						if (random_idx<<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH)) begin						
+							writebackIdx <= random_idx;
+							writebackEntry <= {curr_user, rdMemWord[0][random_idx*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
 						end else begin
 							writebackIdx <= 0;
-							writebackEntry <= {curr_user, fastforward_mem_found_reg[0*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+							writebackEntry <= {curr_user, rdMemWord[0][0*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
 						end
 
 						writebackKeyMatch <= 0;
+						writebackLine <= rdMemWord[0];	
 						writebackNeedsKick <= 1;
 					end
-														
-					
-
-				end else if (found_mem!=0) begin
-
-					writebackAddr <= (found_mem==1) ? curr_hash1 : curr_hash2;
-					writebackIdx <= found_mem_idx;
-					writebackEntry <= {curr_user, rdMemWord[found_mem][found_mem_idx*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};			
-					writebackKeyMatch <= 1;
-					writebackLine <= rdMemWord[found_mem];
-
-				end else if (empty_mem!=0) begin
-
-					writebackAddr <= (empty_mem==1) ? curr_hash1 : curr_hash2;
-					writebackIdx <= empty_mem_idx;
-					writebackLine <= rdMemWord[empty_mem];	
-					writebackKeyMatch <= 0;
-					writebackEntry <= 0;
-
+				
 				end	else begin
 
-					writebackAddr <= curr_hash1;
+					if (found_addr_ff[1]==1) begin 
 
-					if (ff_tail[1:0]<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH)) begin						
-						writebackIdx <= ff_tail[1:0];
-						writebackEntry <= {curr_user, rdMemWord[1][ff_tail[1:0]*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+						writebackLine <= fastforward_mem_found_reg[1];
+
+						if (empty_ff[1]==1) begin
+							writebackAddr <= curr_hash2;
+							writebackIdx <= empty_ff_idx[1];
+							writebackEntry <= 0;
+							writebackKeyMatch <= 0;
+						end else begin
+							writebackAddr <= curr_hash2;
+
+							if (random_idx<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH)) begin						
+								writebackIdx <= random_idx;
+								writebackEntry <= {curr_user, fastforward_mem_found_reg[1][random_idx*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+							end else begin
+								writebackIdx <= 0;
+								writebackEntry <= {curr_user, fastforward_mem_found_reg[1][0*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+							end
+
+							writebackKeyMatch <= 0;
+							writebackNeedsKick <= 1;
+						end
 					end else begin
-						writebackIdx <= 0;
-						writebackEntry <= {curr_user, rdMemWord[1][0*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+						writebackAddr <= curr_hash2;
+
+						if (random_idx<<MEMORY_WIDTH/(KEY_WIDTH+HEADER_WIDTH)) begin						
+							writebackIdx <= random_idx;
+							writebackEntry <= {curr_user, rdMemWord[1][random_idx*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+						end else begin
+							writebackIdx <= 0;
+							writebackEntry <= {curr_user, rdMemWord[1][0*(KEY_WIDTH+HEADER_WIDTH) +: KEY_WIDTH+HEADER_WIDTH]};
+						end
+
+						writebackKeyMatch <= 0;
+						writebackLine <= rdMemWord[1];	
+						writebackNeedsKick <= 1;
 					end
 
-					writebackKeyMatch <= 0;
-					writebackLine <= rdMemWord[1];	
-					writebackNeedsKick <= 1;
-
-				end		
+				end
 				
 
 				state <= ST_DECIDE;

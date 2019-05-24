@@ -22,7 +22,7 @@ module nukv_Malloc #(
 	parameter BLOCKSIZE = 64, //B,
 	parameter REQSIZE = 1, //B
     parameter MAX_MEMORY_SIZE = 24,
-	parameter CLASS_COUNT = 5,
+	parameter CLASS_COUNT = 8,
     parameter SUPPORT_SCANS = 1,
     parameter IS_SIM = 0
 	)
@@ -134,7 +134,10 @@ module nukv_Malloc #(
         CLASS1 = 1,
         CLASS2 = 2,
         CLASS3 = 4,
-        CLASS4 = 8;
+        CLASS4 = 8,
+        CLASS5 = 16,
+        CLASS6 = 32,
+        CLASS7 = 64;
 
     localparam integer REFILL_BUFF_BITS = (IS_SIM==0 ? 6 : 4);    
 
@@ -339,9 +342,9 @@ module nukv_Malloc #(
                 end else 
     			if (req_valid==1 && req_ready==1) begin
     				
-    				in_class <= (req_data <= CLASS1*BLOCKSIZE) ? 1 : (req_data<=CLASS2*BLOCKSIZE) ? 2 : (req_data<=CLASS3*BLOCKSIZE) ? 3 : (req_data<=CLASS4*BLOCKSIZE) ? 4 : 0;
+    				in_class <= (req_data <= CLASS1*BLOCKSIZE) ? 1 : (req_data<=CLASS2*BLOCKSIZE) ? 2 : (req_data<=CLASS3*BLOCKSIZE) ? 3 : (req_data<=CLASS4*BLOCKSIZE) ? 4 : (req_data<=CLASS5*BLOCKSIZE) ? 5 : (req_data<=CLASS6*BLOCKSIZE) ? 6 : (req_data<=CLASS7*BLOCKSIZE) ? 7 :0;
 
-                    neededsize <= (req_data <= CLASS1*BLOCKSIZE) ? CLASS1 : (req_data<=CLASS2*BLOCKSIZE) ? CLASS2 : (req_data<=CLASS3*BLOCKSIZE) ? CLASS3 : (req_data<=CLASS4*BLOCKSIZE) ? CLASS4 : 0;
+                    neededsize <= (req_data <= CLASS1*BLOCKSIZE) ? CLASS1 : (req_data<=CLASS2*BLOCKSIZE) ? CLASS2 : (req_data<=CLASS3*BLOCKSIZE) ? CLASS3 : (req_data<=CLASS4*BLOCKSIZE) ? CLASS4 : (req_data<=CLASS5*BLOCKSIZE) ? CLASS5 : (req_data<=CLASS6*BLOCKSIZE) ? CLASS6 : (req_data<=CLASS7*BLOCKSIZE) ? CLASS7 : 0;
 
                     have_large_pointers <= (queuevalid[0]==1 || (head_pointer[0]!=tail_pointer[0])) ? 1 : 0;
 

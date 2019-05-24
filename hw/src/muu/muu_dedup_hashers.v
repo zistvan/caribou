@@ -32,7 +32,7 @@ module muu_Dedup_Hashers
 );
 
 parameter HASH_COUNT_BITS = 4;
-parameter MAX_HASH_ENGINES = 9;
+parameter MAX_HASH_ENGINES = 16;
 
 wire [512:0] hash_input_data [MAX_HASH_ENGINES-1:0];
 reg [512:0] hash_input_prebuf [MAX_HASH_ENGINES-1:0];
@@ -47,7 +47,7 @@ reg softReset;
 reg softResetInt; 
 
 wire [MAX_HASH_ENGINES-1:0] hash_output_valid;
-wire [63:0] hash_output_data [MAX_HASH_ENGINES-1:0];
+wire [511:0] hash_output_data [MAX_HASH_ENGINES-1:0];
 
 wire [MAX_HASH_ENGINES-1:0] outfifo_valid;
 wire [MAX_HASH_ENGINES-1:0] outfifo_ready;
@@ -123,7 +123,7 @@ generate
 			    
 			nukv_fifogen #(
 			    .DATA_SIZE(513),
-			    .ADDR_BITS(4)
+			    .ADDR_BITS(6)
 			) 			
 			fifo_values (
 			    .clk(clk),
