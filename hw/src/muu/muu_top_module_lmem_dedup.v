@@ -1465,11 +1465,11 @@ assign b_wrcmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, b_wrcm
 assign p_rdcmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, p_rdcmd_data_short[27:0]};
 assign p_wrcmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, p_wrcmd_data_short[27:0]};
 
-assign ht_rd_cmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, 4'b0000, rdcmd_data[23:0]};
+assign ht_rd_cmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, rdcmd_data[27:0]};
 assign ht_rd_cmd_valid = rdcmd_valid;
 assign rdcmd_ready = ~ht_rd_cmd_stall;
 
-assign ht_wr_cmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, 4'b0000, wrcmd_data[23:0]};
+assign ht_wr_cmd_data ={24'b000000000000000100000001, 8'b00000001, 4'b0000, wrcmd_data[27:0]};
 assign ht_wr_cmd_valid = wrcmd_valid;
 assign wrcmd_ready = ~ht_wr_cmd_stall;
 
