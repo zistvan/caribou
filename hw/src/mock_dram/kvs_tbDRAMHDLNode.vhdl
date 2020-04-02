@@ -106,7 +106,7 @@ architecture packed of kvs_tbDRAMHDLNode is
   component fifogen_dram_cmd_in
     PORT (
       clk : IN STD_LOGIC;
-      rst : IN STD_LOGIC;
+      srst : IN STD_LOGIC;
       din : IN STD_LOGIC_VECTOR(63 DOWNTO 0);
       wr_en : IN STD_LOGIC;
       rd_en : IN STD_LOGIC;
