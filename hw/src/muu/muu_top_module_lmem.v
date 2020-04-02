@@ -30,8 +30,7 @@ module muu_Top_Module_LMem #(
     parameter KEY_WIDTH = 64,
     parameter HASHTABLE_MEM_SIZE = 20,
     parameter VALUESTORE_MEM_SIZE = 24,
-    parameter FILTER_PRED_CNT = 0,
-    parameter FILTER_REGEX_PARA = 0,
+    parameter PRIVACY_ENABLED = 1,
 	parameter IS_SIM = 0,
     parameter USER_BITS = 3
 )(
@@ -150,8 +149,6 @@ parameter DOUBLEHASH_WIDTH = 64;
 parameter HASH_WIDTH = 32;
 
 parameter SUPPORT_SCANS = 0;
-
-parameter FILTER_ENABLED_NUM = FILTER_REGEX_PARA + FILTER_PRED_CNT;
 
 wire [31:0] rdcmd_data;
 wire        rdcmd_valid;
@@ -1716,7 +1713,7 @@ wire cond_ready;
 wire cond_drop;
 
 generate
-    if (FILTER_ENABLED_NUM==0) begin
+    if (PRIVACY_ENABLED==0) begin
         //no filters in the project, cuts out whole part
         assign cond_valid = predconf_b_valid;
         assign cond_drop = 0;
@@ -1730,40 +1727,27 @@ generate
     else begin
         //need to wire in filters
 
-        nukv_Predicate_Eval_Pipeline_v2 
-                #(.SUPPORT_SCANS(SUPPORT_SCANS),
-                  .PIPE_DEPTH(FILTER_PRED_CNT),
-                  .META_WIDTH(EXT_META_WIDTH) 
-                ) pred_eval_pipe (
+        nukv_Privacy_Pipeline priv_pipe (
 
             .clk(clk),
             .rst(rst),
             
-            .pred_data(predconf_b_fulldata[NET_META_WIDTH+MEMORY_WIDTH : 1]),
+            .pred_data(predconf_b_fulldata[1]),
             .pred_valid(predconf_b_valid),
             .pred_ready(predconf_b_ready),
-            .pred_scan((SUPPORT_SCANS==1) ? predconf_b_fulldata[0] : 0),
 
             .value_data(value_read_data_buf),
-            .value_last(0), 
-            .value_drop(0),
             .value_valid(value_read_valid_buf),
             .value_ready(value_read_ready_buf),
 
             .output_valid(value_frompipe_valid),
             .output_ready(value_frompipe_ready),
             .output_data(value_frompipe_data),
-            .output_last(value_frompipe_last),
-            .output_drop(value_frompipe_drop),
-
-            .scan_on_outside(scan_mode_on),
-
-            .cmd_valid(pe_cmd_valid),
-            .cmd_length(pe_cmd_data),
-            .cmd_meta(pe_cmd_meta),
-            .cmd_ready(pe_cmd_ready)
+            .output_last(value_frompipe_last)            
 
                 );
+
+        assign value_frompipe_drop = 0;
 
 
         nukv_fifogen #(
