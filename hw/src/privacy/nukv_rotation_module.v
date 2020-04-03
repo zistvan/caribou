@@ -17,18 +17,17 @@ module nukv_Rotation_Module
 
     reg[2:0] state;
 
-    wire[511:0] ctr_data;
+    wire[32*3-1:0] ctr_data;
     wire ctr_valid;
     wire ctr_ready;
     wire ctr_last;
 
-    reg[511:0] alt_data;
-    reg alt_valid;
-    reg alt_last;
+    wire[511:0] rtc_data;
+    wire rtc_valid;
+    wire rtc_ready;
+    wire rtc_last;
 
-   	ColToRow #(
-    	.EQUAL_LENGTH_COMP(1)
-    ) rotation_perturb (
+   	ColToRow  col_to_row (
         .clk(clk),
         .rst(rst),
         
@@ -43,10 +42,31 @@ module nukv_Rotation_Module
         .output_last(ctr_last)
     );
 
-    assign output_valid = state==0 ? ctr_valid : alt_valid;
-    assign output_data = state==0 ? ctr_data : alt_data;
-    assign output_last = state==0 ? ctr_last : alt_last;
-    assign ctr_ready = state==0 ? output_ready : 0;
+
+    RowToCol  row_to_col (
+        .clk(clk),
+        .rst(rst),
+        
+        .input_data(ctr_data),
+        .input_valid(ctr_valid),
+        .input_ready(ctr_ready),
+        .input_last(ctr_last),
+        
+        .output_data(rtc_data),
+        .output_valid(rtc_valid),
+        .output_ready(rtc_ready),
+        .output_last(rtc_last)
+    );
+
+
+    reg[511:0] alt_data;
+    reg alt_valid;
+    reg alt_last;
+
+    assign output_valid = state==0 ? rtc_valid : alt_valid;
+    assign output_data = state==0 ? rtc_data : alt_data;
+    assign output_last = state==0 ? rtc_last : alt_last;
+    assign rtc_ready = state==0 ? output_ready : 0;
 
     always @(posedge clk) begin 
     	if(rst) begin
@@ -57,7 +77,7 @@ module nukv_Rotation_Module
     		 state <= 0;
     	end else begin
 
-    		case (state)
+    		/*case (state)
     			0:  begin
     				if (ctr_valid==1 && output_ready==1 && ctr_last==1) begin
     					state <= state+1;
@@ -73,10 +93,11 @@ module nukv_Rotation_Module
     					state <= 0;
     				end
     			end
-    			default : /* default */;
     		endcase
+
+            */
     	end
     end
 
 
-endmodule;
+endmodule

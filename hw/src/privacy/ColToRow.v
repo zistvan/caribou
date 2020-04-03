@@ -1,8 +1,7 @@
 module ColToRow #(
 	parameter COL_BITS = 2,
 	parameter COL_COUNT = 3,
-	parameter CNT_SKIP_WORDS = 0,
-	parameter EQUAL_LENGTH_COMP = 1
+	parameter CNT_SKIP_WORDS = 0
 	)
     (
 	input wire         clk,
@@ -96,16 +95,11 @@ always @(posedge clk) begin
 	end
 end
 
-wire [31:0] sum;
-
 
 
 genvar X;
 generate  
 
-	if (EQUAL_LENGTH_COMP==1) begin
-		assign sum=buffer_output_data[0][31:0]+buffer_output_data[1][31:0]+buffer_output_data[2][31:0];
-	end
 
     for (X=0; X < COL_COUNT; X=X+1)  
 	begin: generateloop		
@@ -128,7 +122,7 @@ generate
 			    .m_axis_tready(buffer_output_ready)
 			);
 
-			assign assembled_data[X*32 +: 32] = (assembled_pos==0 && first_word==1 && EQUAL_LENGTH_COMP==1) ? sum : buffer_output_data[X][assembled_pos*32 +: 32];			
+			assign assembled_data[X*32 +: 32] = buffer_output_data[X][assembled_pos*32 +: 32];			
 			assign assembled_last_pre[X] = buffer_output_data[X][512];
 	end  
 endgenerate  
