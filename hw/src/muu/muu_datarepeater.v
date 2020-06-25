@@ -18,7 +18,7 @@
 
 module muu_DataRepeater #(	
 	parameter DATA_WIDTH = 512,
-	parameter DATA_DEPTH = 16
+	parameter DATA_DEPTH = 256
 )
 (
 	// Clock

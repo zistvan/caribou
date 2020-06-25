@@ -16,30 +16,34 @@
 //---------------------------------------------------------------------------
 
 
-module nukv_Privacy_Pipeline #(
-	parameter MEMORY_WIDTH = 512	
-	)
-    (
-	// Clock
-	input wire         clk,
-	input wire         rst,
+module nukv_Privacy_Pipeline
+#(
+	parameter MEMORY_WIDTH = 512,
+	parameter COL_COUNT = 3,
+    parameter COL_WIDTH = 64,
+    parameter VALUE_SIZE_BYTES_NO = 2,
+	parameter VALUE_HEADER_BYTES_NO = 41
+)
+(
+	input wire clk,
+	input wire rst,
 
-	input wire pred_data,
-	input wire pred_valid,
-	output wire pred_ready,
+	(* mark_debug = "true" *)input wire [MEMORY_WIDTH-1:0] pred_data,
+	(* mark_debug = "true" *)input wire pred_valid,
+	(* mark_debug = "true" *)output wire pred_ready,
 
-	input  wire [MEMORY_WIDTH-1:0] value_data,
-	input  wire         value_valid,
-	output wire         value_ready,
+	(* mark_debug = "true" *)input wire [MEMORY_WIDTH-1:0] value_data,
+	(* mark_debug = "true" *)input wire value_valid,
+	(* mark_debug = "true" *)output wire value_ready,
 
-	output wire [MEMORY_WIDTH-1:0] output_data,
-	output wire         output_valid,
-	output wire			output_last,
-	input  wire         output_ready
+	(* mark_debug = "true" *)output wire [MEMORY_WIDTH-1:0] output_data,
+	(* mark_debug = "true" *)output wire output_valid,
+	(* mark_debug = "true" *)output wire output_last,
+	(* mark_debug = "true" *)input wire output_ready
 
 );
 
-    wire[MEMORY_WIDTH-1:0] seg_data;
+    wire [MEMORY_WIDTH-1:0] seg_data;
     wire seg_valid;
     wire seg_last;
     wire seg_ready;
@@ -54,29 +58,64 @@ module nukv_Privacy_Pipeline #(
     wire oc_valid;
     wire oc_ready;
 
-    wire[MEMORY_WIDTH-1:0] imed_data [1:0];
-    wire[1:0] imed_valid;
-    wire[1:0] imed_last;
-    wire[1:0] imed_ready;
+    wire [MEMORY_WIDTH-1:0] imed_data [1:0];
+    wire [1:0] imed_valid;
+    wire [1:0] imed_last;
+    wire [1:0] imed_ready;
 
-    wire[MEMORY_WIDTH-1:0] omed_data [1:0];
-    wire[1:0] omed_valid;
-    wire[1:0] omed_last;
-    wire[1:0] omed_ready;
-
-
-    assign pred_ready = 1;
+    wire [MEMORY_WIDTH-1:0] omed_data [1:0];
+    wire [1:0] omed_valid;
+    wire [1:0] omed_last;
+    wire [1:0] omed_ready;
+    
+    wire [COL_COUNT*COL_COUNT*COL_WIDTH-1:0] matrix_data;
+    wire matrix_valid;
+    wire matrix_last;
+    
+    wire is_get_cond_valid;
+    wire is_get_cond_ready;
+    
+    wire buffering_matrix;
+    reg matrix_buf_flag;
+    
+    wire matrix_buf_valid;
+    wire matrix_buf_ready;
+    
+    wire segmenter_valid;
+    wire segmenter_ready;
+    
+    assign buffering_matrix = ((matrix_buf_flag == 1 && matrix_last == 0) || (pred_valid == 1 && pred_data[8*VALUE_SIZE_BYTES_NO +: 8] == 8'hFE)) ? 1 : 0;
+    
+    assign segmenter_valid = /*(buffering_matrix == 1) ? 0 : */value_valid;
+    assign matrix_buf_valid = (buffering_matrix == 1) ? value_valid : 0;
+    assign value_ready = (buffering_matrix == 1) ? (matrix_buf_ready & segmenter_ready) : segmenter_ready;
+    
+    assign is_get_cond_valid = /*(buffering_matrix == 1) ? 0 : */pred_valid;
+    assign pred_ready = /*(buffering_matrix == 1) ? 1 : */is_get_cond_ready;
+    
+    always @(posedge clk) begin
+        if (rst == 1) begin
+            matrix_buf_flag <= 0;
+        end else begin
+            if (matrix_buf_flag == 0 && buffering_matrix == 1) begin
+                matrix_buf_flag <= 1;
+            end
+            if (matrix_buf_flag == 1 && matrix_last == 1) begin
+                matrix_buf_flag <= 0;
+            end
+        end
+    end
 
     nukv_fifogen #(
     .DATA_SIZE(8),
-    .ADDR_BITS(5) 
+    .ADDR_BITS(5)
     ) fifo_input_choice (
         .clk(clk),
         .rst(rst),
         
-        .s_axis_tdata(pred_data),
-        .s_axis_tvalid(pred_valid),
-        .s_axis_tready(pred_rady),
+        .s_axis_tdata(pred_data[8*VALUE_SIZE_BYTES_NO +: 1]),
+        .s_axis_tvalid(is_get_cond_valid),
+        .s_axis_tready(is_get_cond_ready),
         .s_axis_talmostfull(),
         
         .m_axis_tdata(ic_data),
@@ -91,8 +130,8 @@ module nukv_Privacy_Pipeline #(
         .clk(clk),
         .rst(rst),
         .value_data(value_data),
-        .value_valid(value_valid),
-        .value_ready(value_ready),
+        .value_valid(segmenter_valid),
+        .value_ready(segmenter_ready),
 
         .output_data(seg_data),
         .output_last(seg_last),
@@ -110,8 +149,8 @@ module nukv_Privacy_Pipeline #(
 
 
     nukv_fifogen #(
-    .DATA_SIZE(513),
-    .ADDR_BITS(8) 
+    .DATA_SIZE(MEMORY_WIDTH+1),
+    .ADDR_BITS(8)
     ) fifo_bypass (
         .clk(clk),
         .rst(rst),
@@ -125,10 +164,37 @@ module nukv_Privacy_Pipeline #(
         .m_axis_tvalid(omed_valid[0]),
         .m_axis_tready(omed_ready[0])
     );
-
-   nukv_Rotation_Module rotation_perturb (
+    
+    nukv_Rotation_Matrix_Buf #(
+        .MEMORY_WIDTH(MEMORY_WIDTH),
+        .COL_COUNT(COL_COUNT),
+   	    .COL_WIDTH(COL_WIDTH),
+   	    .VALUE_SIZE_BYTES_NO(VALUE_SIZE_BYTES_NO)
+    ) rotation_matrix_buf (
         .clk(clk),
         .rst(rst),
+        
+        .value_data(value_data),
+        .value_valid(matrix_buf_valid),
+        .value_ready(matrix_buf_ready),
+        
+        .matrix_data(matrix_data),
+        .matrix_valid(matrix_valid),
+        .matrix_last(matrix_last)
+    );
+
+   nukv_Rotation_Module #(
+        .MEMORY_WIDTH(MEMORY_WIDTH),
+        .COL_COUNT(COL_COUNT),
+   	    .COL_WIDTH(COL_WIDTH),
+   	    .VALUE_SIZE_BYTES_NO(VALUE_SIZE_BYTES_NO),
+   	    .VALUE_HEADER_BYTES_NO(VALUE_HEADER_BYTES_NO)
+    ) rotation_perturb (
+        .clk(clk),
+        .rst(rst),
+        
+        .matrix_data(matrix_data),
+        .matrix_valid(matrix_valid),
         
         .input_data(imed_data[1]),
         .input_valid(imed_valid[1]),
@@ -144,7 +210,7 @@ module nukv_Privacy_Pipeline #(
 
     nukv_fifogen #(
     .DATA_SIZE(8),
-    .ADDR_BITS(5) 
+    .ADDR_BITS(5)
     ) fifo_output_choice (
         .clk(clk),
         .rst(rst),
@@ -167,7 +233,4 @@ module nukv_Privacy_Pipeline #(
     assign omed_ready[0] = oc_valid==1 && oc_data==0 ? output_ready : 0;
     assign omed_ready[1] = oc_valid==1 && oc_data==1 ? output_ready : 0;
 
-
-
-    
 endmodule

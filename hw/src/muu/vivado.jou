@@ -1,0 +1,98 @@
+#-----------------------------------------------------------
+# Vivado v2018.2 (64-bit)
+# SW Build 2258646 on Thu Jun 14 20:02:38 MDT 2018
+# IP Build 2256618 on Thu Jun 14 22:10:49 MDT 2018
+# Start of session at: Mon Sep 30 14:40:31 2019
+# Process ID: 21217
+# Current directory: /home/mihalic/vivado/multes-vcu1525/hw/src/muu
+# Command line: vivado
+# Log file: /home/mihalic/vivado/multes-vcu1525/hw/src/muu/vivado.log
+# Journal file: /home/mihalic/vivado/multes-vcu1525/hw/src/muu/vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.xpr
+open_hw
+connect_hw_server -url veleta1:3121
+current_hw_target [get_hw_targets */xilinx_tcf/Xilinx/12809621t092A]
+set_property PARAM.FREQUENCY 15000000 [get_hw_targets */xilinx_tcf/Xilinx/12809621t092A]
+open_hw_target
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+current_hw_device [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+display_hw_ila_data [ get_hw_ila_data hw_ila_data_1 -of_objects [get_hw_ilas -of_objects [get_hw_devices xcvu9p_0] -filter {CELL_NAME=~"u_ila_0"}]]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+set_property PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property FULL_PROBES.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.ltx} [get_hw_devices xcvu9p_0]
+set_property PROGRAM.FILE {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.runs/impl_1/vcu1525_top_multes.bit} [get_hw_devices xcvu9p_0]
+program_hw_devices [get_hw_devices xcvu9p_0]
+refresh_hw_device [lindex [get_hw_devices xcvu9p_0] 0]
+export_ip_user_files -of_objects  [get_files /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/muu/muu_value_get_decompress.v] -no_script -reset -force -quiet
+remove_files  /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/muu/muu_value_get_decompress.v
+file delete -force /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/muu/muu_value_get_decompress.v
+add_files -norecurse /home/mihalic/vivado/multes-vcu1525/hw/src/muu/muu_value_get_decompress.v
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 4
+wait_on_run impl_1
+reset_run synth_1
+export_ip_user_files -of_objects  [get_files /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/hw/decompress_engine.v] -no_script -reset -force -quiet
+remove_files  /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/hw/decompress_engine.v
+file delete -force /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/hw/decompress_engine.v
+export_ip_user_files -of_objects  [get_files /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/hw/decompress_group_512to64.v] -no_script -reset -force -quiet
+remove_files  /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/hw/decompress_group_512to64.v
+file delete -force /home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.srcs/sources_1/imports/hw/decompress_group_512to64.v
+add_files -norecurse {/home/mihalic/vivado/multes-vcu1525/hw/src/decompression/decompress_engine.v /home/mihalic/vivado/multes-vcu1525/hw/src/decompression/decompress_group_512to64.v}
+launch_runs impl_1 -to_step write_bitstream -jobs 4
+wait_on_run impl_1
+reset_run impl_1 -prev_step 
+save_wave_config {/home/mihalic/vivado/multes-vcu1525/multes_vcu1525/multes_vcu1525.hw/hw_1/wave/hw_ila_data_1/hw_ila_data_1.wcfg}

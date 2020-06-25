@@ -205,21 +205,21 @@ output wire         toeTX_s_axis_write_tready,
 wire c0_ui_clk;
 wire c1_ui_clk;
 
-(* mark_debug = "true" *)wire           ht_s_axis_read_cmd_tvalid;
-(* mark_debug = "true" *)wire          ht_s_axis_read_cmd_tready;
-(* mark_debug = "true" *)wire[79:0]     ht_s_axis_read_cmd_tdata;
+wire           ht_s_axis_read_cmd_tvalid;
+wire          ht_s_axis_read_cmd_tready;
+wire[79:0]     ht_s_axis_read_cmd_tdata;
 
 //read status
 wire          ht_m_axis_read_sts_tvalid;
 wire           ht_m_axis_read_sts_tready;
 wire[7:0]     ht_m_axis_read_sts_tdata;
 //read stream
-(* mark_debug = "true" *)wire[511:0]    ht_m_axis_read_tdata;
+wire[511:0]    ht_m_axis_read_tdata;
 wire[63:0]     ht_m_axis_read_tkeep;
 wire          ht_m_axis_read_tlast;
-(* mark_debug = "true" *)wire          ht_m_axis_read_tvalid;
+wire          ht_m_axis_read_tvalid;
 wire           ht_m_axis_read_tempty;
-(* mark_debug = "true" *)wire           ht_m_axis_read_tready;
+wire           ht_m_axis_read_tready;
 
 //write commands
 wire           ht_s_axis_write_cmd_tvalid;
@@ -238,13 +238,13 @@ wire          ht_s_axis_write_tready;
 
 
 
-(* mark_debug = "true" *)wire           upd_s_axis_read_cmd_tvalid;
-(* mark_debug = "true" *)wire          upd_s_axis_read_cmd_tready;
-(* mark_debug = "true" *)wire[79:0]     upd_s_axis_read_cmd_tdata;
+wire           upd_s_axis_read_cmd_tvalid;
+wire          upd_s_axis_read_cmd_tready;
+wire[79:0]     upd_s_axis_read_cmd_tdata;
 //read status
-(* mark_debug = "true" *)wire          upd_m_axis_read_sts_tvalid;
-(* mark_debug = "true" *)wire           upd_m_axis_read_sts_tready;
-(* mark_debug = "true" *)wire[7:0]     upd_m_axis_read_sts_tdata;
+wire          upd_m_axis_read_sts_tvalid;
+wire           upd_m_axis_read_sts_tready;
+wire[7:0]     upd_m_axis_read_sts_tdata;
 //read stream
 wire[511:0]    upd_m_axis_read_tdata;
 wire[63:0]     upd_m_axis_read_tkeep;
@@ -254,13 +254,13 @@ wire           upd_m_axis_read_tempty;
 wire           upd_m_axis_read_tready;
 
 //write commands
-(* mark_debug = "true" *)wire           upd_s_axis_write_cmd_tvalid;
-(* mark_debug = "true" *)wire          upd_s_axis_write_cmd_tready;
-(* mark_debug = "true" *)wire[79:0]     upd_s_axis_write_cmd_tdata;
+wire           upd_s_axis_write_cmd_tvalid;
+wire          upd_s_axis_write_cmd_tready;
+wire[79:0]     upd_s_axis_write_cmd_tdata;
 //write status
-(* mark_debug = "true" *)wire          upd_m_axis_write_sts_tvalid;
-(* mark_debug = "true" *)wire           upd_m_axis_write_sts_tready;
-(* mark_debug = "true" *)wire[31:0]     upd_m_axis_write_sts_tdata;
+wire          upd_m_axis_write_sts_tvalid;
+wire           upd_m_axis_write_sts_tready;
+wire[31:0]     upd_m_axis_write_sts_tdata;
 //write stream
 wire[511:0]     upd_s_axis_write_tdata;
 wire[63:0]      upd_s_axis_write_tkeep;

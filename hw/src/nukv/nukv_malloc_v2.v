@@ -424,7 +424,11 @@ module nukv_Malloc #(
                         1 : scan_f_mask[poppedaddrminus[8:0] +: CLASS1] <= 0; 
                         2 : scan_f_mask[poppedaddrminus[8:0] +: CLASS2] <= 0; 
                         3 : scan_f_mask[poppedaddrminus[8:0] +: CLASS3] <= 0; 
-                        4 : scan_f_mask[poppedaddrminus[8:0] +: CLASS4] <= 0; 
+                        4 : scan_f_mask[poppedaddrminus[8:0] +: CLASS4] <= 0;
+                        5 : scan_f_mask[poppedaddrminus[8:0] +: CLASS5] <= 0;
+                        6 : scan_f_mask[poppedaddrminus[8:0] +: CLASS6] <= 0;
+                        7 : scan_f_mask[poppedaddrminus[8:0] +: CLASS7] <= 0;
+                          
 
                     endcase
 

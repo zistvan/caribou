@@ -1,0 +1,131 @@
+#-----------------------------------------------------------
+# Vivado v2018.2 (64-bit)
+# SW Build 2258646 on Thu Jun 14 20:02:38 MDT 2018
+# IP Build 2256618 on Thu Jun 14 22:10:49 MDT 2018
+# Start of session at: Fri Apr  5 18:37:01 2019
+# Process ID: 16434
+# Current directory: /home/zistvan/workspace/multes-vcu1525/hw/src
+# Command line: vivado
+# Log file: /home/zistvan/workspace/multes-vcu1525/hw/src/vivado.log
+# Journal file: /home/zistvan/workspace/multes-vcu1525/hw/src/vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.xpr
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+reset_run impl_1 -prev_step 
+launch_simulation
+source zk_toplevel_muu_TB.tcl
+current_wave_config {Untitled 1}
+add_wave {{/zk_toplevel_muu_TB/uut/muukvs_instance}} 
+restart
+run 40 us
+restart
+run 40 us
+relaunch_sim
+restart
+run 40 us
+relaunch_sim
+restart
+run 40 us
+relaunch_sim
+restart
+run 40 us
+restart
+run 40 us
+restart
+run 40 us
+relaunch_sim
+restart
+run 40 us
+restart
+run 40 us
+run 10 us
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+add_files -norecurse /home/zistvan/workspace/multes-vcu1525/hw/src/mock_dram/nvm_facade.v
+relaunch_sim
+close_sim
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+open_run impl_1
+close_design
+copy_ip -name clk_wiz_300_custom -dir /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525 [get_ips  clk_wiz_300_156]
+set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {300} CONFIG.MMCM_DIVCLK_DIVIDE {1} CONFIG.MMCM_CLKFBOUT_MULT_F {4.000} CONFIG.MMCM_CLKOUT0_DIVIDE_F {4.000} CONFIG.CLKOUT1_JITTER {81.814} CONFIG.CLKOUT1_PHASE_ERROR {77.836}] [get_ips clk_wiz_300_custom]
+generate_target all [get_files  /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci]
+catch { config_ip_cache -export [get_ips -all clk_wiz_300_custom] }
+export_ip_user_files -of_objects [get_files /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_fileset sources_1] /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci]
+launch_runs -jobs 12 clk_wiz_300_custom_synth_1
+export_simulation -of_objects [get_files /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci] -directory /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files/sim_scripts -ip_user_files_dir /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files -ipstatic_source_dir /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files/ipstatic -lib_map_path [list {modelsim=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/modelsim} {questa=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/questa} {ies=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/ies} {xcelium=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/xcelium} {vcs=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/vcs} {riviera=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
+reset_run synth_1
+launch_runs synth_1 -jobs 12
+wait_on_run synth_1
+reset_run synth_1
+launch_runs synth_1 -jobs 12
+wait_on_run synth_1
+launch_runs impl_1 -jobs 12
+wait_on_run impl_1
+set_property -dict [list CONFIG.CLKOUT2_USED {true} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {156.25} CONFIG.MMCM_DIVCLK_DIVIDE {1} CONFIG.MMCM_CLKFBOUT_MULT_F {3.125} CONFIG.MMCM_CLKOUT0_DIVIDE_F {3.125} CONFIG.MMCM_CLKOUT1_DIVIDE {6} CONFIG.NUM_OUT_CLKS {2} CONFIG.CLKOUT1_JITTER {81.318} CONFIG.CLKOUT1_PHASE_ERROR {82.557} CONFIG.CLKOUT2_JITTER {92.457} CONFIG.CLKOUT2_PHASE_ERROR {82.557}] [get_ips clk_wiz_300_custom]
+generate_target all [get_files  /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci]
+catch { config_ip_cache -export [get_ips -all clk_wiz_300_custom] }
+export_ip_user_files -of_objects [get_files /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci] -no_script -sync -force -quiet
+reset_run clk_wiz_300_custom_synth_1
+launch_runs -jobs 12 clk_wiz_300_custom_synth_1
+export_simulation -of_objects [get_files /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci] -directory /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files/sim_scripts -ip_user_files_dir /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files -ipstatic_source_dir /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files/ipstatic -lib_map_path [list {modelsim=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/modelsim} {questa=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/questa} {ies=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/ies} {xcelium=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/xcelium} {vcs=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/vcs} {riviera=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
+reset_run synth_1
+launch_runs impl_1 -jobs 12
+wait_on_run impl_1
+reset_run impl_1 -prev_step 
+reset_run synth_1
+launch_runs impl_1 -jobs 12
+wait_on_run impl_1
+open_run impl_1
+set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {250} CONFIG.MMCM_DIVCLK_DIVIDE {3} CONFIG.MMCM_CLKFBOUT_MULT_F {12.500} CONFIG.MMCM_CLKOUT0_DIVIDE_F {5.000} CONFIG.MMCM_CLKOUT1_DIVIDE {8} CONFIG.CLKOUT1_JITTER {93.545} CONFIG.CLKOUT1_PHASE_ERROR {84.520} CONFIG.CLKOUT2_JITTER {102.075} CONFIG.CLKOUT2_PHASE_ERROR {84.520}] [get_ips clk_wiz_300_custom]
+generate_target all [get_files  /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci]
+catch { config_ip_cache -export [get_ips -all clk_wiz_300_custom] }
+export_ip_user_files -of_objects [get_files /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci] -no_script -sync -force -quiet
+reset_run clk_wiz_300_custom_synth_1
+launch_runs -jobs 12 clk_wiz_300_custom_synth_1
+export_simulation -of_objects [get_files /home/zistvan/workspace/multes-vcu1525/hw/ip/vcu1525/clk_wiz_300_custom/clk_wiz_300_custom.xci] -directory /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files/sim_scripts -ip_user_files_dir /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files -ipstatic_source_dir /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.ip_user_files/ipstatic -lib_map_path [list {modelsim=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/modelsim} {questa=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/questa} {ies=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/ies} {xcelium=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/xcelium} {vcs=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/vcs} {riviera=/home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.cache/compile_simlib/riviera}] -use_ip_compiled_libs -force -quiet
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+report_timing_summary -delay_type min_max -report_unconstrained -check_timing_verbose -max_paths 10 -input_pins -routable_nets -name timing_1
+refresh_design
+launch_simulation
+source zk_toplevel_muu_TB.tcl
+current_wave_config {Untitled 2}
+add_wave {{/zk_toplevel_muu_TB/uut}} 
+restart
+run 35 us
+restart
+run 35 us
+current_wave_config {Untitled 2}
+add_wave {{/zk_toplevel_muu_TB/mockmem_ht}} 
+current_wave_config {Untitled 2}
+add_wave {{/zk_toplevel_muu_TB/mockmem_ht/rd_cmd_delay}} 
+current_wave_config {Untitled 2}
+add_wave {{/zk_toplevel_muu_TB/mockmem_ht/rd_data_delay}} 
+restart
+run 35 us
+relaunch_sim
+restart
+run 35 us
+relaunch_sim
+relaunch_sim
+restart
+run 35 us
+relaunch_sim
+relaunch_sim
+restart
+run 35 us
+relaunch_sim
+restart
+run 35 us

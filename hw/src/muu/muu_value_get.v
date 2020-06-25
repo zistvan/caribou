@@ -22,7 +22,8 @@ module muu_Value_Get #(
 	parameter META_WIDTH = 96,
 	parameter MEMORY_WIDTH = 512,
 	parameter SUPPORT_SCANS = 0, 
-	parameter USER_BITS = 3
+	parameter USER_BITS = 3,
+	parameter MAX_WORDS_IN_PACKET = 160
 	)
     (
 	// Clock
@@ -162,19 +163,22 @@ always @(posedge clk) begin
 			output_last <= 0;
 		end		
 
-		if (SUPPORT_SCANS==1) begin
-			if (output_last==1 && output_valid==1 && output_ready==1) begin
-				words_since_last <= 1;
-			end else if (output_valid==1 && output_ready==1) begin
-				words_since_last <= words_since_last+1;					
-			end
+		
+        if (output_last==1 && output_valid==1 && output_ready==1) begin
+            words_since_last <= 1;
+        end else if (output_valid==1 && output_ready==1) begin
+            words_since_last <= words_since_last+1;					
+        end
+        
+        if (words_since_last==MAX_WORDS_IN_PACKET) begin
+            must_last <= 1;
+        end else begin
+            must_last <= 0;
+        end
 
-			if (words_since_last>127) begin
-				must_last <= 1;
-			end else begin
-				must_last <= 0;
-			end
-
+        
+        if (SUPPORT_SCANS==1) begin
+			
 			if  (scanning==1 && scan_mode==0 && (output_valid!=1 || output_last!=1)) begin
 				output_valid <= 1;
 				output_last <= 1;
@@ -352,8 +356,8 @@ always @(posedge clk) begin
 					cond_ready <= hasvalue & is_forme;
 
 					output_valid <= 1;
-					//output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]}; // prints out the pointer and length
-					output_word <= {32'h0,malloc_stat_data};
+					output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]}; // prints out the pointer and length
+					//output_word <= {32'h0,malloc_stat_data};
 
 					first_value_word <= 1;
 
@@ -378,8 +382,8 @@ always @(posedge clk) begin
 			ST_NO_HEADER: begin
 				if (output_ready==1) begin
 					output_valid <= sendAnswerReg;
-					//output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]}; // prints out the pointer and length
-					output_word <= {32'h0,malloc_stat_data};
+					output_word <= {16'h0, meta_data[128 +: 16], meta_data[96 +: 32]}; // prints out the pointer and length
+					//output_word <= {32'h0,malloc_stat_data};
 
 					first_value_word <= 1;
 
@@ -403,6 +407,7 @@ always @(posedge clk) begin
 
 					output_valid <= 1;
 					output_word <= value_data[idx*64 +: 64];
+					output_last <= must_last;
 					
 					//if (first_value_word==1 && value_data[15:0]<1024) begin
 					//	toread <= (value_data[15:0]+7)/8;
@@ -443,6 +448,7 @@ always @(posedge clk) begin
 
 					output_valid <= 1;
 					output_word <= repl_in_data[idx*64 +: 64];
+					output_last <= must_last;
 										
 					if (toread<=8 && idx==toread-1) begin						
 						state <= ST_IDLE;	

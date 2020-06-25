@@ -111,10 +111,10 @@ reg [FASTFORWARD_BITS-1:0] ff_cnt;
 reg [FASTFORWARD_BITS-1:0] pos_ff;
 
 (* ram_style = "block" *) reg [USER_BITS+KEY_WIDTH+HEADER_WIDTH-1:0] kicked_keys [0:2**FASTFORWARD_BITS]; 
-(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] kk_head;
-(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] kk_tail;
-(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] kk_cnt;
-(* mark_debug = "true" *)reg [FASTFORWARD_BITS-1:0] pos_kk;
+reg [FASTFORWARD_BITS-1:0] kk_head;
+reg [FASTFORWARD_BITS-1:0] kk_tail;
+reg [FASTFORWARD_BITS-1:0] kk_cnt;
+reg [FASTFORWARD_BITS-1:0] pos_kk;
 
 reg [1:0] found_ff;
 reg [1:0] found_addr_ff;

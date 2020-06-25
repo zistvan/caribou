@@ -179,10 +179,10 @@ wire [7:0] rx_axis_tkeep_0;
 wire rx_axis_tuser_0;
 wire [55:0] rx_preambleout_0;
 
-(* mark_debug = "true" *)wire rx_axis_tvalid_oc;
+wire rx_axis_tvalid_oc;
 wire [63:0] rx_axis_tdata_oc;
-(* mark_debug = "true" *)wire rx_axis_tlast_oc;
- (* mark_debug = "true" *)wire rx_axis_tready_oc;
+wire rx_axis_tlast_oc;
+ wire rx_axis_tready_oc;
 wire [7:0] rx_axis_tkeep_oc;
 wire rx_axis_tuser_oc;
 wire [55:0] rx_preambleout_oc;
@@ -269,10 +269,10 @@ wire [55:0] rx_preambleout_oc;
   wire [7:0] tx_axis_tkeep_int;
   wire tx_axis_tuser_int;
 
- (* mark_debug = "true" *) wire tx_axis_tready_oc;
- (* mark_debug = "true" *) wire tx_axis_tvalid_oc;
+  wire tx_axis_tready_oc;
+  wire tx_axis_tvalid_oc;
   wire [63:0] tx_axis_tdata_oc;
- (* mark_debug = "true" *) wire tx_axis_tlast_oc;
+  wire tx_axis_tlast_oc;
   wire [7:0] tx_axis_tkeep_oc;
   wire tx_axis_tuser_oc;
    wire tx_unfout_oc;
@@ -632,23 +632,23 @@ wire        axis_close_connection_TVALID;
 wire        axis_close_connection_TREADY;
 wire[15:0]  axis_close_connection_TDATA;
 // rx data
-(* mark_debug = "true" *)wire        axis_rx_metadata_TVALID;
-(* mark_debug = "true" *)wire        axis_rx_metadata_TREADY;
-(* mark_debug = "true" *)wire[15:0]  axis_rx_metadata_TDATA;
-(* mark_debug = "true" *)wire        axis_rx_data_TVALID;
-(* mark_debug = "true" *)wire        axis_rx_data_TREADY;
-wire[63:0]  axis_rx_data_TDATA;
+wire        axis_rx_metadata_TVALID;
+wire        axis_rx_metadata_TREADY;
+wire[15:0]  axis_rx_metadata_TDATA;
+wire        axis_rx_data_TVALID;
+wire        axis_rx_data_TREADY;
+ wire[63:0]  axis_rx_data_TDATA;
 wire[7:0]   axis_rx_data_TKEEP;
-(* mark_debug = "true" *)wire        axis_rx_data_TLAST;
+wire        axis_rx_data_TLAST;
 // tx data
-(* mark_debug = "true" *)wire        axis_tx_metadata_TVALID;
-(* mark_debug = "true" *)wire        axis_tx_metadata_TREADY;
-(* mark_debug = "true" *)wire[31:0]  axis_tx_metadata_TDATA;
-(* mark_debug = "true" *)wire        axis_tx_data_TVALID;
-(* mark_debug = "true" *)wire        axis_tx_data_TREADY;
-(* mark_debug = "true" *)wire[63:0]  axis_tx_data_TDATA;
+wire        axis_tx_metadata_TVALID;
+wire        axis_tx_metadata_TREADY;
+wire[31:0]  axis_tx_metadata_TDATA;
+wire        axis_tx_data_TVALID;
+wire        axis_tx_data_TREADY;
+wire[63:0]  axis_tx_data_TDATA;
 wire[7:0]   axis_tx_data_TKEEP;
-(* mark_debug = "true" *)wire        axis_tx_data_TLAST;
+wire        axis_tx_data_TLAST;
 wire        axis_tx_status_TVALID;
 wire        axis_tx_status_TREADY;
 wire[63:0]  axis_tx_status_TDATA;
@@ -1080,8 +1080,8 @@ end
 
 
     wire [63:0] ht_cmd_dramRdData_data;
-    (* mark_debug = "true" *)wire        ht_cmd_dramRdData_valid;
-     (* mark_debug = "true" *)wire        ht_cmd_dramRdData_stall;
+    wire        ht_cmd_dramRdData_valid;
+     wire        ht_cmd_dramRdData_stall;
 
 
     wire [511:0] ht_dramWrData_data;
@@ -1090,8 +1090,8 @@ end
 
 
     wire [63:0] ht_cmd_dramWrData_data;
-    (* mark_debug = "true" *)wire        ht_cmd_dramWrData_valid;
-     (* mark_debug = "true" *)wire        ht_cmd_dramWrData_stall;
+    wire        ht_cmd_dramWrData_valid;
+     wire        ht_cmd_dramWrData_stall;
      
 
      
@@ -1102,8 +1102,8 @@ end
 
  
   wire [63:0] upd_cmd_dramRdData_data;
-  (* mark_debug = "true" *)wire        upd_cmd_dramRdData_valid;
-   (* mark_debug = "true" *)wire        upd_cmd_dramRdData_stall;
+  wire        upd_cmd_dramRdData_valid;
+   wire        upd_cmd_dramRdData_stall;
 
  
   wire [511:0] upd_dramWrData_data;
@@ -1112,8 +1112,8 @@ end
 
  
   wire [63:0] upd_cmd_dramWrData_data;
-  (* mark_debug = "true" *)wire        upd_cmd_dramWrData_valid;
-   (* mark_debug = "true" *)wire        upd_cmd_dramWrData_stall;    
+  wire        upd_cmd_dramWrData_valid;
+   wire        upd_cmd_dramWrData_stall;    
 
 
   wire [63:0] ptr_rdcmd_data;

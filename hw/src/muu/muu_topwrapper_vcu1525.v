@@ -503,7 +503,7 @@ module muu_TopWrapper #(
    #(   
             .IS_SIM(IS_SIM),
             .USER_BITS(USER_BITS),
-            .HASHTABLE_MEM_SIZE(24), //the total size is this +USER_BITS!!!
+            .HASHTABLE_MEM_SIZE(25), //the total size is this +USER_BITS!!!
             .VALUESTORE_MEM_SIZE(27)    
    ) muukvs_instance (
         .clk(aclk),
@@ -614,7 +614,7 @@ module muu_TopWrapper #(
           injectValid <= 0;
         end
         if (injectValid==0 && fromKvsValid==1 && fromKvsReady==1 && fromKvsLast==1) begin
-          injectValid <= 1;
+          //injectValid <= 1;
           injectWord <= {fromKvsData[127:64],64'd0};
         end
       end
@@ -633,7 +633,7 @@ module muu_TopWrapper #(
     //axis_data_saf_kvs
         nukv_fifogen #(
             .DATA_SIZE(128+1),
-            .ADDR_BITS(9)
+            .ADDR_BITS(11)
         ) fifo_lastdata (
                 .clk(aclk),//.s_axis_aclk(aclk),
                 .rst(reset),//.s_axis_aresetn(~reset),

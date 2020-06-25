@@ -1,154 +1,211 @@
-module ColToRow #(
-	parameter COL_BITS = 2,
+module ColToRow
+#(
+    parameter MEMORY_WIDTH = 512, // constraint: 8 * (VALUE_SIZE_BYTES_NO + VALUE_HEADER_BYTES_NO) <= MEMORY_WIDTH
 	parameter COL_COUNT = 3,
-	parameter CNT_SKIP_WORDS = 0
-	)
-    (
-	input wire         clk,
-	input wire         rst,
+	parameter COL_WIDTH = 64,
+	parameter VALUE_SIZE_BYTES_NO = 2,
+	parameter VALUE_HEADER_BYTES_NO = 3
+)
+(
+	input wire clk,
+	input wire rst,
 
-	input  wire [511:0] input_data,
-	input  wire         input_valid,
-	input  wire			input_last,
-	output wire          input_ready,
+	input  wire [MEMORY_WIDTH-1:0] input_data,
+	input  wire input_valid,
+	input  wire input_last,
+	output wire input_ready,
 
-	output wire [COL_COUNT*32-1:0] output_data,
-	output wire         output_valid,
-	output wire			output_last,
-	input  wire         output_ready
+    output reg [8*VALUE_SIZE_BYTES_NO-1:0] value_size_data,
+	output wire [COL_COUNT*COL_WIDTH-1:0] output_data,
+	output wire output_valid,
+	output wire output_last,
+	input  wire output_ready
 );
 
+//localparam WORD_OFFSET = (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO)) % (COL_WIDTH/8);
 
+reg [$clog2(COL_COUNT)-1:0] current_buffer_engine;
 
+wire [MEMORY_WIDTH:0] buffer_input_data [COL_COUNT-1:0];
+wire [COL_COUNT-1:0] buffer_input_valid;
+wire [COL_COUNT-1:0] buffer_input_ready;
 
-
-reg [512:0] buffer_input_data [COL_COUNT-1:0];
-wire [COL_COUNT-1:0] buffer_input_hasdata;
-wire [COL_COUNT-1:0] buffer_input_almfull;
-wire [COL_COUNT-1:0] buffer_input_notfull;
-reg [COL_COUNT-1:0] buffer_input_enable;	 
-
-wire [512:0] buffer_output_data [COL_COUNT-1:0];
+wire [MEMORY_WIDTH:0] buffer_output_data [COL_COUNT-1:0];
 wire [COL_COUNT-1:0] buffer_output_valid;
-wire  buffer_output_ready;
+reg [COL_COUNT-1:0] buffer_output_ready;
 
-reg[3:0] assembled_pos;
-wire [32*COL_COUNT-1:0] assembled_data;
-wire assembled_last;
-wire[COL_COUNT-1:0] assembled_last_pre;
+(* mark_debug = "true" *)reg [MEMORY_WIDTH-1:0] colword_buf [COL_COUNT-1:0];
+reg [COL_COUNT-1:0] colword_last;
+reg [$clog2(MEMORY_WIDTH)-1:0] colword_addr [COL_COUNT-1:0];
+
+reg [COL_COUNT-1:0] first_word_flag;
+
+reg [8*VALUE_SIZE_BYTES_NO-1:0] value_bytes_counter [COL_COUNT-1:0];
+
+reg [COL_WIDTH*COL_COUNT-1:0] assembled_data;
+reg [COL_COUNT-1:0] assembled_valid_pre;
 wire assembled_valid;
+wire assembled_last;
 wire assembled_ready;
 
-reg [COL_BITS-1:0] current_buffer_engine;
+(* mark_debug = "true" *)reg [$clog2(COL_WIDTH/8)-1:0] offset [COL_COUNT-1:0];
 
-reg buffer_inputbuffer_ok;
-reg buffer_inputbuffer_pre;
+integer idx, byte;
 
-assign input_ready = (buffer_inputbuffer_ok); 
-
-reg rstBuf;
-
-integer x;
-reg first_word;
-
-always @(posedge clk) begin
-	rstBuf <= rst;	
-
-	if (rst) begin
-		current_buffer_engine <= 0;
-		buffer_input_enable <= 0;		
-		buffer_inputbuffer_ok <= 0;
-		buffer_inputbuffer_pre <= 0;
-		assembled_pos <= CNT_SKIP_WORDS;
-		first_word <= 1;
-	end
-	else begin
-		buffer_input_enable <= 0;			
-
-		buffer_inputbuffer_pre <= (buffer_input_notfull == {COL_COUNT{1'b1}} ? 1 : 0) && (buffer_input_almfull == 0 ? 1 : 0);
-		buffer_inputbuffer_ok <= buffer_inputbuffer_pre;
-	
-
-		if (input_ready==1 && input_valid==1) begin
-			buffer_input_data[current_buffer_engine] <= {input_last, input_data};
-			buffer_input_enable[current_buffer_engine] <= 1;
-			if (input_last==1) begin
-				if (current_buffer_engine==COL_COUNT-1) begin
-					current_buffer_engine <= 0;
-				end else begin
-					current_buffer_engine <= current_buffer_engine +1;
-				end
-			end
-		end
-
-
-		if (assembled_valid==1 && assembled_ready==1) begin
-			assembled_pos <= assembled_pos+1;
-			first_word <= 0;
-
-			if (assembled_last==1) begin
-				assembled_pos <= CNT_SKIP_WORDS;
-				first_word <= 1;
-			end
-		end
-
-	end
-end
-
-
-
-genvar X;
+genvar i;
 generate  
-
-
-    for (X=0; X < COL_COUNT; X=X+1)  
+    for (i=0; i < COL_COUNT; i = i + 1)  
 	begin: generateloop		
 			    
 			nukv_fifogen #(
-			    .DATA_SIZE(513),
+			    .DATA_SIZE(MEMORY_WIDTH+1),
 			    .ADDR_BITS(9)
-			)
-			fifo_values (
+			) fifo_values (
 			    .clk(clk),
-			    .rst(rstBuf),
+			    .rst(rst),
 			    
-			    .s_axis_tdata(buffer_input_data[X]),
-			    .s_axis_tvalid(buffer_input_enable[X]),
-			    .s_axis_tready(buffer_input_notfull[X]),
-			    .s_axis_talmostfull(buffer_input_almfull[X]),
-			    
-			    .m_axis_tdata(buffer_output_data[X][512:0]),
-			    .m_axis_tvalid(buffer_output_valid[X]),
-			    .m_axis_tready(buffer_output_ready)
-			);
-
-			assign assembled_data[X*32 +: 32] = buffer_output_data[X][assembled_pos*32 +: 32];			
-			assign assembled_last_pre[X] = buffer_output_data[X][512];
-	end  
-endgenerate  
-
-assign assembled_valid = (buffer_output_valid == {COL_COUNT{1'b1}}) ? 1 : 0;
-assign buffer_output_ready = (assembled_pos==15) ? assembled_ready : 0;
-assign assembled_last = (assembled_pos==15 && assembled_last_pre=={COL_COUNT{1'b1}}) ? 1 : 0; 
-
-
-nukv_fifogen #(
-			    .DATA_SIZE(COL_COUNT*32+1),
-			    .ADDR_BITS(4)
-			) fifo_output (
-				 .clk(clk),
-			    .rst(rstBuf),
-			    
-			    .s_axis_tdata({assembled_last,assembled_data}),
-			    .s_axis_tvalid(assembled_valid),
-			    .s_axis_tready(assembled_ready),
+			    .s_axis_tdata(buffer_input_data[i]),
+			    .s_axis_tvalid(buffer_input_valid[i]),
+			    .s_axis_tready(buffer_input_ready[i]),
 			    .s_axis_talmostfull(),
 			    
-			    .m_axis_tdata({output_last,output_data}),
-			    .m_axis_tvalid(output_valid),
-			    .m_axis_tready(output_ready)
+			    .m_axis_tdata(buffer_output_data[i]),
+			    .m_axis_tvalid(buffer_output_valid[i]),
+			    .m_axis_tready(buffer_output_ready[i])
 			);
-			
+	end  
+endgenerate
 
+nukv_fifogen #(
+    .DATA_SIZE(COL_COUNT*COL_WIDTH+1),
+    .ADDR_BITS(4)
+) fifo_output (
+    .clk(clk),
+    .rst(rst),
+    
+    .s_axis_tdata({assembled_last,assembled_data}),
+    .s_axis_tvalid(assembled_valid),
+    .s_axis_tready(assembled_ready),
+    .s_axis_talmostfull(),
+    
+    .m_axis_tdata({output_last,output_data}),
+    .m_axis_tvalid(output_valid),
+    .m_axis_tready(output_ready)
+);
+
+for (i = 0; i < COL_COUNT; i = i + 1) begin
+    assign buffer_input_data[i] = (current_buffer_engine == i) ? input_data : 0;
+    assign buffer_input_valid[i] = (current_buffer_engine == i) ? input_valid : 0;
+end
+
+assign input_ready = buffer_input_ready[current_buffer_engine];
+
+assign assembled_valid = (assembled_valid_pre == {COL_COUNT{1'b1}}) ? 1 : 0;
+assign assembled_last = assembled_valid == 1 && value_bytes_counter[0] == 0;
+
+always @(posedge clk) begin
+	if (rst == 1) begin
+		current_buffer_engine <= 0;
+		
+		for (idx = 0; idx < COL_COUNT; idx = idx + 1) begin
+            first_word_flag[idx] <= 1;
+            buffer_output_ready[idx] <= 1;
+            assembled_valid_pre[idx] <= 0;
+        end
+	end else begin
+        if (input_valid == 1 && input_ready == 1 && input_last == 1) begin
+            if (current_buffer_engine == COL_COUNT - 1) begin
+                current_buffer_engine <= 0;
+            end else begin
+                current_buffer_engine <= current_buffer_engine + 1;
+            end
+        end
+        
+        for (idx = 0; idx < COL_COUNT; idx = idx + 1) begin
+            if (buffer_output_valid[idx] == 1 && buffer_output_ready[idx] == 1) begin
+                buffer_output_ready[idx] <= 0;
+                
+                colword_buf[idx] <= buffer_output_data[idx][MEMORY_WIDTH-1:0];
+                colword_last[idx] <= buffer_output_data[idx][MEMORY_WIDTH];
+            end
+            
+            if (buffer_output_ready[idx] == 0 && assembled_valid_pre[idx] == 0) begin
+                if (first_word_flag[idx] == 1) begin
+                    // we have to strip the page header whose size is not always the same
+                    if (colword_buf[idx][8*(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO) +: 16] == 16'h0002) begin
+                        value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - VALUE_HEADER_BYTES_NO - 6;
+                        colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + VALUE_HEADER_BYTES_NO + 6);
+                        first_word_flag[idx] <= 0;
+                        if (idx == 0) begin
+                            value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_HEADER_BYTES_NO - 6;
+                        end
+                        offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO + 6)) % (COL_WIDTH/8);
+                    end else begin
+                        if (colword_buf[idx][8*(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO) +: 16] == 16'h0300) begin
+                            value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - VALUE_HEADER_BYTES_NO - 8;
+                            colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + VALUE_HEADER_BYTES_NO + 8);
+                            first_word_flag[idx] <= 0;
+                            if (idx == 0) begin
+                                value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_HEADER_BYTES_NO - 8;
+                            end
+                            offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO + 8)) % (COL_WIDTH/8);
+                        end
+                    end
+                end else begin
+                    if (colword_addr[idx] == 0) begin
+                        for (byte = 0; byte < (COL_WIDTH/8-offset[idx]); byte = byte + 1) begin
+                            assembled_data[idx * COL_WIDTH + offset[idx]*8 + byte*8 +: 8] <= colword_buf[idx][colword_addr[idx] + byte*8 +: 8];
+                        end
+                        assembled_valid_pre[idx] <= 1;
+                        colword_addr[idx] <= colword_addr[idx] + (COL_WIDTH-offset[idx]*8);
+                        value_bytes_counter[idx] <= value_bytes_counter[idx] - COL_WIDTH / 8;
+                        if (colword_addr[idx] + (COL_WIDTH-offset[idx]*8) >= MEMORY_WIDTH) begin
+                            colword_addr[idx] <= 0;
+                            buffer_output_ready[idx] <= 1;
+                        end
+                        if (value_bytes_counter[idx] - COL_WIDTH / 8 == 0) begin
+                            colword_addr[idx] <= 0;
+                            buffer_output_ready[idx] <= 1;
+                            first_word_flag[idx] <= 1;
+                        end
+                    end else begin
+                        if (colword_addr[idx] <= MEMORY_WIDTH - COL_WIDTH) begin
+                            for (byte = 0; byte < COL_WIDTH/8; byte = byte + 1) begin
+                                assembled_data[idx * COL_WIDTH + byte*8 +: 8] <= colword_buf[idx][colword_addr[idx] + byte*8 +: 8];
+                            end
+                            assembled_valid_pre[idx] <= 1;
+                            colword_addr[idx] <= colword_addr[idx] + COL_WIDTH;
+                            value_bytes_counter[idx] <= value_bytes_counter[idx] - COL_WIDTH / 8;
+                            if (colword_addr[idx] + COL_WIDTH == MEMORY_WIDTH) begin
+                                colword_addr[idx] <= 0;
+                                buffer_output_ready[idx] <= 1;
+                            end
+                            if (value_bytes_counter[idx] - COL_WIDTH / 8 == 0) begin
+                                colword_addr[idx] <= 0;
+                                buffer_output_ready[idx] <= 1;
+                                first_word_flag[idx] <= 1;
+                            end
+                        end else begin
+                            if (colword_addr[idx] >= MEMORY_WIDTH) begin
+                                colword_addr[idx] <= 0;
+                                buffer_output_ready[idx] <= 1;
+                            end else begin
+                                for (byte = 0; byte < offset[idx]; byte = byte + 1) begin
+                                    assembled_data[idx * COL_WIDTH + byte*8 +: 8] <= colword_buf[idx][colword_addr[idx] + byte*8 +: 8];
+                                end
+                                colword_addr[idx] <= 0;
+                                buffer_output_ready[idx] <= 1;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if (assembled_valid == 1 && assembled_ready == 1) begin
+            assembled_valid_pre <= 0;
+        end
+	end
+end
 
 endmodule

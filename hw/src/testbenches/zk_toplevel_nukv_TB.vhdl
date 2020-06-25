@@ -73,7 +73,7 @@ architecture bench of zk_toplevel_nukv_TB is
       
       m_axis_tx_metadata_TVALID : out std_logic;
       m_axis_tx_metadata_TREADY : in std_logic;
-      m_axis_tx_metadata_TDATA: out std_logic_vector(15 downto 0);
+      m_axis_tx_metadata_TDATA: out std_logic_vector(31 downto 0);
       
       s_axis_tx_status_TVALID : in std_logic;
       s_axis_tx_status_TREADY : out std_logic;
@@ -161,36 +161,36 @@ architecture bench of zk_toplevel_nukv_TB is
       bmap_wrcmd_valid : out std_logic;
       bmap_wrcmd_ready : in std_logic;
       
-      para0_in_tdata : in std_logic_vector(63 downto 0);
-      para0_in_tvalid : in std_logic;
-      para0_in_tlast : in std_logic;
-      para0_in_tready : out std_logic;
+--      para0_in_tdata : in std_logic_vector(63 downto 0);
+--      para0_in_tvalid : in std_logic;
+--      para0_in_tlast : in std_logic;
+--      para0_in_tready : out std_logic;
       
-      para1_in_tdata : in std_logic_vector(63 downto 0);
-      para1_in_tvalid : in std_logic;
-      para1_in_tlast : in std_logic;
-      para1_in_tready : out std_logic;                   
+--      para1_in_tdata : in std_logic_vector(63 downto 0);
+--      para1_in_tvalid : in std_logic;
+--      para1_in_tlast : in std_logic;
+--      para1_in_tready : out std_logic;                   
 
-      para2_in_tdata : in std_logic_vector(63 downto 0);
-      para2_in_tvalid : in std_logic;
-      para2_in_tlast : in std_logic;
-      para2_in_tready : out std_logic;
+--      para2_in_tdata : in std_logic_vector(63 downto 0);
+--      para2_in_tvalid : in std_logic;
+--      para2_in_tlast : in std_logic;
+--      para2_in_tready : out std_logic;
       
-      para0_out_tdata : out std_logic_vector(63 downto 0);
-      para0_out_tvalid : out std_logic;
-      para0_out_tlast : out std_logic;
-      para0_out_tready : in std_logic;
+--      para0_out_tdata : out std_logic_vector(63 downto 0);
+--      para0_out_tvalid : out std_logic;
+--      para0_out_tlast : out std_logic;
+--      para0_out_tready : in std_logic;
       
-      para1_out_tdata : out std_logic_vector(63 downto 0);
-      para1_out_tvalid : out std_logic;
-      para1_out_tlast : out std_logic;
-      para1_out_tready : in std_logic;                   
+--      para1_out_tdata : out std_logic_vector(63 downto 0);
+--      para1_out_tvalid : out std_logic;
+--      para1_out_tlast : out std_logic;
+--      para1_out_tready : in std_logic;                   
 
-      para2_out_tdata : out std_logic_vector(63 downto 0);
-      para2_out_tvalid : out std_logic;
-      para2_out_tlast : out std_logic;
-      para2_out_tready : in std_logic;
-      
+--      para2_out_tdata : out std_logic_vector(63 downto 0);
+--      para2_out_tvalid : out std_logic;
+--      para2_out_tlast : out std_logic;
+--      para2_out_tready : in std_logic;
+     
       hadretransmit : in std_logic_vector(63 downto 0);
       toedebug : in std_logic_vector(161 downto 0)        
       
@@ -283,7 +283,7 @@ end component;
   signal out_last: std_logic_vector(0 downto 0);
   signal out_data: std_logic_vector(63 downto 0);
   signal out_meta_valid : std_logic;
-  signal out_meta: std_logic_vector(15 downto 0) ;
+  signal out_meta: std_logic_vector(31 downto 0) ;
   
   signal waiting : std_logic_vector(15 downto 0);
   signal waiting2 : std_logic_vector(15 downto 0);
@@ -490,21 +490,21 @@ begin
       bmap_wrcmd_ready =>bmap_wrcmd_ready,
           
         
-                para0_in_tdata => (others => '0'),
-                para1_in_tdata => (others => '0'),
-                para2_in_tdata => (others => '0'),
+--                para0_in_tdata => (others => '0'),
+--                para1_in_tdata => (others => '0'),
+--                para2_in_tdata => (others => '0'),
                 
-                para0_in_tvalid => '0',
-                para1_in_tvalid => '0',
-                para2_in_tvalid => '0',
+--                para0_in_tvalid => '0',
+--                para1_in_tvalid => '0',
+--                para2_in_tvalid => '0',
                 
-                para0_in_tlast => '0',
-                para1_in_tlast => '0',
-                para2_in_tlast => '0',
+--                para0_in_tlast => '0',
+--                para1_in_tlast => '0',
+--                para2_in_tlast => '0',
                 
-                para0_out_tready => '1',
-                          para1_out_tready => '1',
-                          para2_out_tready => '1',
+--                para0_out_tready => '1',
+--                          para1_out_tready => '1',
+--                          para2_out_tready => '1',
  
           hadretransmit => (others => '0'),
           toedebug => (others => '0')

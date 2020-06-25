@@ -1,0 +1,35 @@
+#-----------------------------------------------------------
+# Vivado v2018.2 (64-bit)
+# SW Build 2258646 on Thu Jun 14 20:02:38 MDT 2018
+# IP Build 2256618 on Thu Jun 14 22:10:49 MDT 2018
+# Start of session at: Thu Apr 11 15:09:43 2019
+# Process ID: 20641
+# Current directory: /home/zistvan/workspace/multes-vcu1525/hw/src
+# Command line: vivado
+# Log file: /home/zistvan/workspace/multes-vcu1525/hw/src/vivado.log
+# Journal file: /home/zistvan/workspace/multes-vcu1525/hw/src/vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project /home/zistvan/workspace/multes-vcu1525/multes_vcu1525/multes_vcu1525.xpr
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+open_hw
+connect_hw_server -url veleta1.imdea:3121
+launch_simulation
+source zk_toplevel_muu_TB.tcl
+current_wave_config {Untitled 1}
+add_wave {{/zk_toplevel_muu_TB/uut}} 
+restart
+run 50 us
+restart
+run 50 us
+restart
+run 50 us
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1
+close_sim
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 12
+wait_on_run impl_1

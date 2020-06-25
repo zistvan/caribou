@@ -30,9 +30,11 @@ module muu_Top_Module_LMem #(
     parameter KEY_WIDTH = 64,
     parameter HASHTABLE_MEM_SIZE = 20,
     parameter VALUESTORE_MEM_SIZE = 24,
-    parameter PRIVACY_ENABLED = 1,
+    parameter FILTER_PRED_CNT = 0,
+    parameter FILTER_REGEX_PARA = 0,
 	parameter IS_SIM = 0,
-    parameter USER_BITS = 3
+    parameter USER_BITS = 3,
+    parameter ENABLE_CHECKPOINTS = 0
 )(
 	// Clock
 	input wire         clk,
@@ -150,6 +152,8 @@ parameter HASH_WIDTH = 32;
 
 parameter SUPPORT_SCANS = 0;
 
+parameter FILTER_ENABLED_NUM = FILTER_REGEX_PARA + FILTER_PRED_CNT;
+
 wire [31:0] rdcmd_data;
 wire        rdcmd_valid;
 wire        rdcmd_stall;
@@ -168,22 +172,22 @@ wire [39:0] upd_wrcmd_data;
 wire        upd_wrcmd_ready;
 
 wire [15:0] mreq_data;
-(* mark_debug = "true" *)wire mreq_valid;
-(* mark_debug = "true" *)wire mreq_ready;
+wire mreq_valid;
+wire mreq_ready;
 
 wire [15:0] mreq_data_b;
 wire mreq_valid_b;
 wire mreq_ready_b;
 
 wire [31:0] malloc_data;
-(* mark_debug = "true" *)wire malloc_valid;
-(* mark_debug = "true" *)wire malloc_failed;
-(* mark_debug = "true" *)wire malloc_ready;
+wire malloc_valid;
+wire malloc_failed;
+wire malloc_ready;
 
 wire [31:0] free_data;
 wire [15:0] free_size;
-(* mark_debug = "true" *)wire free_valid;
-(* mark_debug = "true" *)wire free_ready;
+wire free_valid;
+wire free_ready;
 wire free_wipe;
 
 wire [31:0] malloc_data_b;
@@ -201,17 +205,17 @@ wire free_wipe_b;
 
 wire [63:0] key_data;
 wire key_last;
-(* mark_debug = "true" *)wire key_valid;
-(* mark_debug = "true" *)wire key_ready;
+wire key_valid;
+wire key_ready;
 
 wire [EXT_META_WIDTH-1:0] meta_data;
-(* mark_debug = "true" *)wire meta_valid;
-(* mark_debug = "true" *)wire meta_ready;
+wire meta_valid;
+wire meta_ready;
 
 
 wire [USER_BITS+63:0] tohash_data;
-(* mark_debug = "true" *)wire tohash_valid;
-(* mark_debug = "true" *)wire tohash_ready;
+wire tohash_valid;
+wire tohash_ready;
 
 wire [1+63:0] tosm_data;
 wire tosm_valid;
@@ -258,20 +262,20 @@ wire keywhash_valid;
 wire keywhash_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+DOUBLEHASH_WIDTH-1:0] towrite_b_data;
-(* mark_debug = "true" *)wire towrite_b_valid;
-(* mark_debug = "true" *)wire towrite_b_ready;
+wire towrite_b_valid;
+wire towrite_b_ready;
 
 wire [16+KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] writeout_data;
 wire writeout_valid;
 wire writeout_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] writeout_b_data;
-(* mark_debug = "true" *)wire writeout_b_valid;
-(* mark_debug = "true" *)wire writeout_b_ready;
+wire writeout_b_valid;
+wire writeout_b_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_data;
-(* mark_debug = "true" *)wire fromset_valid;
-(* mark_debug = "true" *)wire fromset_ready;
+wire fromset_valid;
+wire fromset_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH-1:0] fromset_b_data;
 wire fromset_b_valid;
@@ -282,8 +286,8 @@ wire towrite_valid;
 wire towrite_ready;
 
 wire [KEY_WIDTH+EXT_META_WIDTH-1:0] writefb_data;
-(* mark_debug = "true" *)wire writefb_valid;
-(* mark_debug = "true" *)wire writefb_ready;
+wire writefb_valid;
+wire writefb_ready;
 
 
 wire [KEY_WIDTH+EXT_META_WIDTH-1:0] writefb_b_data;
@@ -296,9 +300,9 @@ wire feedbwhash_ready;
 
 wire [VALUE_WIDTH-1:0] value_data;
 wire [15:0] value_length;
-(* mark_debug = "true" *)wire value_last;
-(* mark_debug = "true" *)wire value_valid;
-(* mark_debug = "true" *)wire value_ready;
+wire value_last;
+wire value_valid;
+wire value_ready;
 wire value_almost_full;
 
 wire [VALUE_WIDTH+16+1-1:0] value_b_data;
@@ -552,45 +556,55 @@ always @(posedge clk) begin
     end
 end
 
+generate
+if (ENABLE_CHECKPOINTS==1) begin
 
+	muu_Checkpoint #(
+	    .DATA_WIDTH(128),
+	    .USER_BITS(USER_BITS),
+	    .COST_BITS(3),
+	    .TB_DEFAULT_HEADER_SIZE(0)
 
+	) checkpoint_on_netin (
 
-muu_Checkpoint #(
-    .DATA_WIDTH(128),
-    .USER_BITS(USER_BITS),
-    .COST_BITS(3),
-    .TB_DEFAULT_HEADER_SIZE(0)
+	    .clk(clk),
+	    .rst(rst),
 
-) checkpoint_on_netin (
+	    .in_data(s_axis_tdata),
+	    .in_valid(s_axis_tvalid),
+	    .in_ready(s_axis_tready),
+	    .in_cost(1),
+	    .in_user(s_axis_tuserid),
+	    .in_first(sAxisFirst),
+	    .in_last(s_axis_tlast),
 
-    .clk(clk),
-    .rst(rst),
+	    .out_data(in_axis_tdata),
+	    .out_valid(in_axis_tvalid),
+	    .out_ready(in_axis_tready),
+	    .out_user(in_axis_tuserid),
+	    .out_last(in_axis_tlast),
+	    .out_first(),
 
-    .in_data(s_axis_tdata),
-    .in_valid(s_axis_tvalid),
-    .in_ready(s_axis_tready),
-    .in_cost(1),
-    .in_user(s_axis_tuserid),
-    .in_first(sAxisFirst),
-    .in_last(s_axis_tlast),
+	    .config_valid(checkpt_first_valid_buf),
+	    .config_burst(checkpt_first_burst_buf),
+	    .config_user(checkpt_first_user_buf),    
+	    .config_updfreq(checkpt_first_freq_buf),
+	    .config_updcount(checkpt_first_cnt_buf),
 
-    .out_data(in_axis_tdata),
-    .out_valid(in_axis_tvalid),
-    .out_ready(in_axis_tready),
-    .out_user(in_axis_tuserid),
-    .out_last(in_axis_tlast),
-    .out_first(),
+	    //no op count limit needed
+	    .decrement_valid(rateLimitOutput),
+	    .decrement_user(rateLimitUser)
+	);
+end else begin
 
-    .config_valid(checkpt_first_valid_buf),
-    .config_burst(checkpt_first_burst_buf),
-    .config_user(checkpt_first_user_buf),    
-    .config_updfreq(checkpt_first_freq_buf),
-    .config_updcount(checkpt_first_cnt_buf),
-
-    //no op count limit needed
-    .decrement_valid(rateLimitOutput),
-    .decrement_user(rateLimitUser)
-);
+    assign in_axis_tdata = s_axis_tdata;
+    assign in_axis_tvalid = s_axis_tvalid;
+    assign in_axis_tuserid = s_axis_tuserid;
+    assign in_axis_tlast = s_axis_tlast;
+    assign s_axis_tready = in_axis_tready;
+    
+end
+endgenerate
 
 wire [3:0] reqsplit_debug;
 
@@ -1441,41 +1455,52 @@ fifo_512bit_regslice write_out_reg_slice (
   .m_axis_tdata(writeout_data)    // output wire [255 : 0] m_axis_tdata
 );
 
-muu_Checkpoint #(
-    .DATA_WIDTH(KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH),
-    .USER_BITS(USER_BITS),
-    .COST_BITS(16)
-) fifo_w_checkpoint (
+generate
 
-    .clk(clk),
-    .rst(rst),
+if (ENABLE_CHECKPOINTS==1) 
+begin
 
-    .in_data(writeout_data),
-    .in_valid(writeout_valid),
-    .in_ready(writeout_ready),
-    .in_cost(writeout_data[KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH +: 16]),
-    .in_user(writeout_data[KEY_WIDTH+EXT_META_WIDTH-USER_BITS  +: USER_BITS]),
-    .in_first(1'b1),
-    .in_last(1'b1),
+	muu_Checkpoint #(
+	    .DATA_WIDTH(KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH),
+	    .USER_BITS(USER_BITS),
+	    .COST_BITS(16)
+	) fifo_w_checkpoint (
 
-    .out_data(writeout_int_data),
-    .out_valid(writeout_int_valid),
-    .out_ready(writeout_int_ready),
-    .out_user(writeout_int_user),
-    .out_first(),
-    .out_last(),
+	    .clk(clk),
+	    .rst(rst),
 
-    .config_valid(checkpt_second_valid_buf),
-    .config_burst(checkpt_second_burst_buf),
-    .config_user(checkpt_second_user_buf),
-    .config_updfreq(checkpt_second_freq_buf),
-    .config_updcount(checkpt_second_cnt_buf),
+	    .in_data(writeout_data),
+	    .in_valid(writeout_valid),
+	    .in_ready(writeout_ready),
+	    .in_cost(writeout_data[KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH +: 16]),
+	    .in_user(writeout_data[KEY_WIDTH+EXT_META_WIDTH-USER_BITS  +: USER_BITS]),
+	    .in_first(1'b1),
+	    .in_last(1'b1),
 
-    //no op count limit needed
-    .decrement_valid(decruserValid),
-    .decrement_user(decruserID)
-);
+	    .out_data(writeout_int_data),
+	    .out_valid(writeout_int_valid),
+	    .out_ready(writeout_int_ready),
+	    .out_user(writeout_int_user),
+	    .out_first(),
+	    .out_last(),
 
+	    .config_valid(checkpt_second_valid_buf),
+	    .config_burst(checkpt_second_burst_buf),
+	    .config_user(checkpt_second_user_buf),
+	    .config_updfreq(checkpt_second_freq_buf),
+	    .config_updcount(checkpt_second_cnt_buf),
+
+	    //no op count limit neededwriteout_data
+	    .decrement_valid(decruserValid),
+	    .decrement_user(decruserID)
+	);
+end else begin
+	assign writeout_int_data = writeout_data;
+	assign writeout_int_valid = writeout_valid;
+	assign writeout_int_user = writeout_data[KEY_WIDTH+EXT_META_WIDTH-USER_BITS  +: USER_BITS];
+	assign writeout_ready  = writeout_int_ready;
+end
+endgenerate
 
 nukv_fifogen #(
     .DATA_SIZE(KEY_WIDTH+EXT_META_WIDTH+HEADER_WIDTH),
@@ -1713,7 +1738,7 @@ wire cond_ready;
 wire cond_drop;
 
 generate
-    if (PRIVACY_ENABLED==0) begin
+    if (FILTER_ENABLED_NUM==0) begin
         //no filters in the project, cuts out whole part
         assign cond_valid = predconf_b_valid;
         assign cond_drop = 0;
@@ -1727,27 +1752,40 @@ generate
     else begin
         //need to wire in filters
 
-        nukv_Privacy_Pipeline priv_pipe (
+        nukv_Predicate_Eval_Pipeline_v2 
+                #(.SUPPORT_SCANS(SUPPORT_SCANS),
+                  .PIPE_DEPTH(FILTER_PRED_CNT),
+                  .META_WIDTH(EXT_META_WIDTH) 
+                ) pred_eval_pipe (
 
             .clk(clk),
             .rst(rst),
             
-            .pred_data(predconf_b_fulldata[1]),
+            .pred_data(predconf_b_fulldata[NET_META_WIDTH+MEMORY_WIDTH : 1]),
             .pred_valid(predconf_b_valid),
             .pred_ready(predconf_b_ready),
+            .pred_scan((SUPPORT_SCANS==1) ? predconf_b_fulldata[0] : 0),
 
             .value_data(value_read_data_buf),
+            .value_last(0), 
+            .value_drop(0),
             .value_valid(value_read_valid_buf),
             .value_ready(value_read_ready_buf),
 
             .output_valid(value_frompipe_valid),
             .output_ready(value_frompipe_ready),
             .output_data(value_frompipe_data),
-            .output_last(value_frompipe_last)            
+            .output_last(value_frompipe_last),
+            .output_drop(value_frompipe_drop),
+
+            .scan_on_outside(scan_mode_on),
+
+            .cmd_valid(pe_cmd_valid),
+            .cmd_length(pe_cmd_data),
+            .cmd_meta(pe_cmd_meta),
+            .cmd_ready(pe_cmd_ready)
 
                 );
-
-        assign value_frompipe_drop = 0;
 
 
         nukv_fifogen #(
