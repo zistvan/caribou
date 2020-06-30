@@ -2,7 +2,6 @@ package internal
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 )
 
@@ -123,7 +122,7 @@ type ValueResHandler struct {
 }
 
 // var errs = 0
-var responseNo = 0
+// var responseNo = 0
 
 func (ValueResHandler) handleResponse(o *Operation, rd *bufio.Reader) error {
 
@@ -191,8 +190,8 @@ func (ValueResHandler) handleResponse(o *Operation, rd *bufio.Reader) error {
 
 	o.Result = rpl
 
-	responseNo++
-	fmt.Printf("%d ", responseNo)
+	// responseNo++
+	// fmt.Printf("%d ", responseNo)
 
 	// } else if o.OpCode == OpGetCond {
 	// 	plb := make([]byte, 4)

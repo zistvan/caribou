@@ -334,10 +334,10 @@ func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int
 		processor.valueNoOffsets[disabledColumnsIndices[i]] = 0
 	}
 
-	fmt.Printf("Column permutation: %v\n", columnPermutation)
-	fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
-	fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
-	fmt.Printf("getCondNo = %d; getNo = %d\n\n", getCondNo, getNo)
+	// fmt.Printf("Column permutation: %v\n", columnPermutation)
+	// fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
+	// fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
+	// fmt.Printf("getCondNo = %d; getNo = %d\n\n", getCondNo, getNo)
 
 	pages, err := processor.Client.GetBulkN(keys, getCondNo, getNo, n)
 	//pages, err := processor.Client.GetBulk(keys, getCondNo, getNo)
