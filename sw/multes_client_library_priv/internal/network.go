@@ -168,8 +168,14 @@ func prepareRequest(o *Operation) ([]byte, error) {
 
 	lb /= 8
 
-	header := []byte{0xff, 0xff, 0x00, o.OpCode, byte(lb & 0xff), byte((lb >> 8) & 0xff), 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	header := make([]byte, 0, 16)
+	header = append(header, []byte{0xff, 0xff, 0x00, o.OpCode, byte(lb & 0xff), byte((lb >> 8) & 0xff), 0x00, 0x00}...)
+	if o.Checkpoint == nil {
+		header = append(header, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}...)
+	} else {
+		header = append(header, []byte{0xBB, 0xBB, o.Checkpoint.TokenBucketIdx, o.Checkpoint.TokensEachTick,
+			o.Checkpoint.ClkCyclesBeforeTick, o.Checkpoint.MaxBurstSize[0], o.Checkpoint.MaxBurstSize[1], 0x00, 0x00}...)
+	}
 
 	copy(b, header)
 

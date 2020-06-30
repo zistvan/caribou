@@ -108,6 +108,35 @@ func (c Client) Get(key []byte) ([]byte, error) {
 	return res[:curLen], nil
 }
 
+func (c Client) GetWithCheckpoint(key []byte, tokenBucketIdx int, tokensEachTick int, clkCyclesBeforeTick int, maxBurstSize int) ([]byte, error) {
+	if len(key) > maxKLen {
+		return nil, newKeyError(maxKLen)
+	}
+
+	initKey := make([]byte, len(key)+idxLen)
+	copy(initKey[idxLen:], key)
+
+	gOp := internal.NewGetWithCheckpoint(initKey, &internal.CheckpointConfig{TokenBucketIdx: byte(tokenBucketIdx),
+		TokensEachTick: byte(tokensEachTick), ClkCyclesBeforeTick: byte(clkCyclesBeforeTick),
+		MaxBurstSize: [2]byte{byte(maxBurstSize & 0xFF), byte((maxBurstSize >> 8) & 0xFF)}})
+
+	rh := internal.ValueResHandler{}
+
+	err := c.conn.Send(gOp, &rh)
+
+	if err != nil {
+		return nil, err
+	}
+
+	pRes := gOp.Result
+
+	if pRes == nil {
+		return nil, nil
+	}
+
+	return pRes, nil
+}
+
 func (c Client) GetPerturbed(key [perturbedGroupSize][]byte) ([][]byte, error) {
 	rqs := make([]*internal.Operation, perturbedGroupSize)
 
@@ -136,6 +165,94 @@ func (c Client) GetPerturbed(key [perturbedGroupSize][]byte) ([][]byte, error) {
 			return nil, fmt.Errorf("Corrupted packet of key %x", r.Key)
 		}
 
+		results[i] = r.Result
+	}
+
+	return results, nil
+}
+
+func (c Client) GetBulkN(keys [][]byte, getCondNo int, getNo int, n int) ([][]byte, error) {
+	if getCondNo%perturbedGroupSize != 0 {
+		return nil, fmt.Errorf("Error GetBulkN: getCondNo should be multiple of perturbedGroupSize.")
+	}
+	if n%perturbedGroupSize != 0 {
+		return nil, fmt.Errorf("Error GetBulkN: n should be multiple of perturbedGroupSize.")
+	}
+
+	results := make([][]byte, getCondNo+getNo)
+
+	rqs := make([]*internal.Operation, n)
+	rh := internal.ValueResHandler{}
+	i := 0
+	for ; i < getCondNo+getNo; i++ {
+		initKey := make([]byte, len(keys[i])+idxLen)
+		copy(initKey[idxLen:], keys[i])
+		if i < getCondNo {
+			value := []byte{0xFF}
+			rqs[i%n] = internal.NewGetCondOp(initKey, value)
+		} else {
+			rqs[i%n] = internal.NewGetOp(initKey)
+		}
+
+		if (i+1)%n == 0 {
+			err := c.conn.SendBulk(rqs, &rh)
+			if err != nil {
+				return nil, err
+			}
+
+			for j, r := range rqs {
+				if r.Result == nil {
+					return nil, fmt.Errorf("Corrupted packet of key %x", r.Key)
+				}
+				results[i-n+1+j] = r.Result
+			}
+		}
+	}
+	if i%n != 0 {
+		err := c.conn.SendBulk(rqs[:(i%n)], &rh)
+		if err != nil {
+			return nil, err
+		}
+
+		for j := 0; j < i%n; j++ {
+			if rqs[j].Result == nil {
+				return nil, fmt.Errorf("Corrupted packet of key %x", rqs[j].Key)
+			}
+			results[i-i%n+j] = rqs[j].Result
+		}
+	}
+
+	return results, nil
+}
+
+func (c Client) GetBulk(keys [][]byte, getCondNo int, getNo int) ([][]byte, error) {
+	if getCondNo%perturbedGroupSize != 0 {
+		return nil, fmt.Errorf("Error GetBulk: getCondNo should be multiple of perturbedGroupSize.")
+	}
+
+	rqs := make([]*internal.Operation, getCondNo+getNo)
+	for i := 0; i < getCondNo+getNo; i++ {
+		initKey := make([]byte, len(keys[i])+idxLen)
+		copy(initKey[idxLen:], keys[i])
+		if i < getCondNo {
+			value := []byte{0xFF}
+			rqs[i] = internal.NewGetCondOp(initKey, value)
+		} else {
+			rqs[i] = internal.NewGetOp(initKey)
+		}
+	}
+
+	rh := internal.ValueResHandler{}
+	err := c.conn.SendBulk(rqs, &rh)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([][]byte, getCondNo+getNo)
+	for i, r := range rqs {
+		if r.Result == nil {
+			return nil, fmt.Errorf("Corrupted packet of key %x", r.Key)
+		}
 		results[i] = r.Result
 	}
 

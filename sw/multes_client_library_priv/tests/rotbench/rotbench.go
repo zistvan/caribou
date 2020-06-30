@@ -38,10 +38,12 @@ func main() {
 		err         error
 		inFilePath  string
 		hostAddress string
+		n           int
 	)
 
 	flag.StringVar(&hostAddress, "h", "localhost:11211", "The address of the server (host:port)")
 	flag.StringVar(&inFilePath, "f", "diabetes.parquet", "Path to the .parquet input file.")
+	flag.IntVar(&n, "n", 3, "no of requests for bulk sending")
 	flag.Parse()
 
 	inFilePathWithoutExtension := inFilePath[:strings.IndexByte(inFilePath, '.')]
@@ -139,11 +141,11 @@ func main() {
 	p.DisableColumn(p.ColumnsNo - 1)
 
 	start1 := time.Now()
-	fpgaData, err := p.GetPerturbedRows(key, columnPermutation)
+	fpgaData, err := p.GetPerturbedRows(key, columnPermutation, n)
 	if err != nil {
 		log.Fatalf("Error GetPerturbedRows: %s\n", err)
 	}
-	t1 := float64(time.Since(start1).Nanoseconds()) / 1e3
+	t1 := float64(time.Since(start1).Microseconds()) / 1e3
 	fmt.Printf("T1 = %f\n", t1)
 
 	stringData := make([][]string, len(fpgaData[0])+1)
@@ -178,22 +180,22 @@ func main() {
 	}
 
 	start2 := time.Now()
-	n := int(pr.GetNumRows())
+	rowsNo := int(pr.GetNumRows())
 
-	f := make([]parquet.PimaIndiansDiabetesData, n)
+	f := make([]parquet.PimaIndiansDiabetesData, rowsNo)
 
 	err = pr.Read(&f)
 	if err != nil {
 		log.Fatalf("Error read: %v\n", err)
 	}
 
-	rotatedData := make([][]float64, n)
+	rotatedData := make([][]float64, rowsNo)
 	for i := range rotatedData {
 		rotatedData[i] = make([]float64, 9)
 	}
 
 	var rotated []float64
-	for i := 0; i < n; i++ {
+	for i := 0; i < rowsNo; i++ {
 		rotated = rotpert.RotateVector3D(rotationMatrix, []float64{*f[i].Pregnancies, *f[i].Glucose, *f[i].BloodPressure})
 		for k := 0; k < 3; k++ {
 			rotatedData[i][0+k] = rotated[k]
@@ -209,16 +211,16 @@ func main() {
 		rotatedData[i][8] = *f[i].Outcome
 	}
 
-	t2 := float64(time.Since(start2).Nanoseconds()) / 1e3
+	t2 := float64(time.Since(start2).Microseconds()) / 1e3
 	fmt.Printf("T2 = %f\n", t2)
 
-	stringData = make([][]string, n+1)
-	for i := 0; i < n+1; i++ {
+	stringData = make([][]string, rowsNo+1)
+	for i := 0; i < rowsNo+1; i++ {
 		stringData[i] = make([]string, 9)
 	}
 	for i := 0; i < 9; i++ {
 		stringData[0][i] = columns[i]
-		for j := 1; j <= n; j++ {
+		for j := 1; j <= rowsNo; j++ {
 			stringData[j][i] = fmt.Sprintf("%f", rotatedData[j-1][i])
 		}
 	}

@@ -35,10 +35,12 @@ func main() {
 		inFilePath  string
 		hostAddress string
 		repeatsNo   int
+		n           int
 	)
 
 	flag.StringVar(&hostAddress, "h", "localhost:11211", "The address of the server (host:port)")
 	flag.StringVar(&inFilePath, "f", "diabetes.parquet", "Path to the .parquet input file.")
+	flag.IntVar(&n, "n", 3, "no of requests for bulk sending")
 	flag.IntVar(&repeatsNo, "r", 100, "No of repeats")
 	flag.Parse()
 
@@ -136,7 +138,7 @@ func main() {
 
 	start1 := time.Now()
 	for i := 0; i < repeatsNo; i++ {
-		_, err = p.GetPerturbedRows(key, columnPermutation)
+		_, err = p.GetPerturbedRows(key, columnPermutation, n)
 		if err != nil {
 			log.Fatalf("Error GetPerturbedRows: %s\n", err)
 		}
@@ -151,7 +153,7 @@ func main() {
 
 	start2 := time.Now()
 	for i := 0; i < repeatsNo; i++ {
-		fileData, err := p.GetPerturbedRows(key, []int{})
+		fileData, err := p.GetPerturbedRows(key, []int{}, n)
 		if err != nil {
 			log.Fatalf("Error GetPerturbedRows: %s\n", err)
 		}

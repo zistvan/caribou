@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 )
 
@@ -32,10 +33,18 @@ const (
 // Result is set, depending on the kind of operation, in the
 // response handling.
 type Operation struct {
-	OpCode byte
-	Key    []byte
-	Value  []byte
-	Result []byte
+	OpCode     byte
+	Key        []byte
+	Value      []byte
+	Result     []byte
+	Checkpoint *CheckpointConfig
+}
+
+type CheckpointConfig struct {
+	TokenBucketIdx      byte
+	TokensEachTick      byte
+	ClkCyclesBeforeTick byte
+	MaxBurstSize        [2]byte
 }
 
 // ResponseHandler handles the response of a K/V operation.
@@ -114,6 +123,7 @@ type ValueResHandler struct {
 }
 
 // var errs = 0
+var responseNo = 0
 
 func (ValueResHandler) handleResponse(o *Operation, rd *bufio.Reader) error {
 
@@ -180,6 +190,10 @@ func (ValueResHandler) handleResponse(o *Operation, rd *bufio.Reader) error {
 	}
 
 	o.Result = rpl
+
+	responseNo++
+	fmt.Printf("%d ", responseNo)
+
 	// } else if o.OpCode == OpGetCond {
 	// 	plb := make([]byte, 4)
 
@@ -219,30 +233,34 @@ func (ValueResHandler) handleResponse(o *Operation, rd *bufio.Reader) error {
 
 // NewGetOp initializes an operation type that performs a Get.
 func NewGetOp(key []byte) *Operation {
-	return &Operation{OpGet, key, nil, nil}
+	return &Operation{OpGet, key, nil, nil, nil}
 }
 
 // NewSetOp initializes an operation type that performs a local Set.
 func NewSetOp(key, value []byte) *Operation {
-	return &Operation{OpSetLoc, key, value, nil}
+	return &Operation{OpSetLoc, key, value, nil, nil}
 }
 
 // NewSetReplOp initializes an operation that performs a replicated Set.
 func NewSetReplOp(key, value []byte) *Operation {
-	return &Operation{OpSetRep, key, value, nil}
+	return &Operation{OpSetRep, key, value, nil, nil}
 }
 
 // NewInitOp initializes an operation that performs a Flush.
 func NewInitOp() *Operation {
-	return &Operation{OpFlush, []byte(initData), nil, nil}
+	return &Operation{OpFlush, []byte(initData), nil, nil, nil}
 }
 
 // NewDelOp initializes an operation that performs a Delete
 func NewDelOp(key []byte) *Operation {
-	return &Operation{OpDelete, key, nil, nil}
+	return &Operation{OpDelete, key, nil, nil, nil}
 }
 
 // NewGetCondOp initializes an operation that performs a Conditional Get.
 func NewGetCondOp(key, value []byte) *Operation {
-	return &Operation{OpGetCond, key, value, nil}
+	return &Operation{OpGetCond, key, value, nil, nil}
+}
+
+func NewGetWithCheckpoint(key []byte, c *CheckpointConfig) *Operation {
+	return &Operation{OpGet, key, nil, nil, c}
 }

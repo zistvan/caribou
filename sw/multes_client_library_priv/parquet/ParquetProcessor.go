@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 
-	//"fmt"
 	"io"
 	"math"
 	"reflect"
@@ -232,7 +231,7 @@ func (processor *Processor) GetMetaData(key []byte) (*pq.FileMetaData, []int, er
 	return parquetFileMetaData, processor.columnChunksValuesNo, nil
 }
 
-func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int) ([][]float64, error) {
+func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int, n int) ([][]float64, error) {
 	var err error
 
 	if processor.parquetFileMetaData == nil {
@@ -241,22 +240,6 @@ func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int
 			return nil, fmt.Errorf("Error GetMetaData: %s\n", err)
 		}
 	}
-
-	var enabledColumnsIndices []int
-	var disabledColumnsIndices []int
-	for i := 0; i < processor.ColumnsNo; i++ {
-		if processor.enabledColumns[i] {
-			enabledColumnsIndices = append(enabledColumnsIndices, i)
-		} else {
-			disabledColumnsIndices = append(disabledColumnsIndices, i)
-		}
-	}
-
-	//columnPermutation := rotpert.RandomPermutation(len(enabledColumnsIndices))
-
-	// fmt.Printf("Column permutation: %v\n", columnPermutation)
-	// fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
-	// fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
 
 	var dirVal []byte
 	if len(processor.arrayDir) == 0 {
@@ -271,7 +254,26 @@ func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int
 		dirVal = processor.arrayDir
 	}
 
-	outCols := make([][]float64, processor.ColumnsNo)
+	var enabledColumnsIndices []int
+	var disabledColumnsIndices []int
+	for i := 0; i < processor.ColumnsNo; i++ {
+		if processor.enabledColumns[i] {
+			enabledColumnsIndices = append(enabledColumnsIndices, i)
+		} else {
+			disabledColumnsIndices = append(disabledColumnsIndices, i)
+		}
+	}
+
+	//columnPermutation := rotpert.RandomPermutation(len(enabledColumnsIndices))
+
+	keys := make([][]byte, 0, processor.columnChunksValuesNo[processor.ColumnsNo])
+	getCondNo := 0
+	getNo := 0
+
+	// fmt.Printf("Column permutation: %v\n", columnPermutation)
+	// fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
+	// fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
+	// fmt.Printf("getCondNo = %d; getNo = %d\n\n", getCondNo, getNo)
 
 	for i := 0; i < len(columnPermutation); i += 3 {
 		for {
@@ -288,41 +290,23 @@ func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int
 				break
 			}
 
-			// start1 := time.Now()
-			var keys [3][]byte
 			for j := 0; j < 3; j++ {
-				keys[j], err = processor.Client.ArrayGetElemKey(dirVal, key, processor.columnChunksValuesNo[enabledColumnsIndices[columnPermutation[i+j]]]+
-					processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]])
+				k, err := processor.Client.ArrayGetElemKey(dirVal, key,
+					processor.columnChunksValuesNo[enabledColumnsIndices[columnPermutation[i+j]]]+
+						processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]])
 				if err != nil {
 					return nil, err
 				}
-			}
-			// t1 := float64(time.Since(start1).Nanoseconds()) / 1e3
-			// fmt.Printf("I1 = %f\n", t1)
-
-			// start2 := time.Now()
-			pages, err := processor.Client.GetPerturbed(keys)
-			if err != nil {
-				return nil, err
-			}
-			// t2 := float64(time.Since(start2).Nanoseconds()) / 1e3
-			// fmt.Printf("I2 = %f\n", t2)
-
-			// start3 := time.Now()
-			for j := 0; j < 3; j++ {
-				if i+j < len(enabledColumnsIndices) {
-					for k := 0; k < len(pages[j]); k += 8 {
-						bits := binary.LittleEndian.Uint64(pages[j][k : k+8])
-						n := math.Float64frombits(bits)
-						outCols[enabledColumnsIndices[columnPermutation[i+j]]] = append(outCols[enabledColumnsIndices[columnPermutation[i+j]]], n)
-					}
-				}
+				keys = append(keys, k)
+				getCondNo++
 				processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]]++
 			}
-			// t3 := float64(time.Since(start3).Nanoseconds()) / 1e3
-			// fmt.Printf("I3 = %f\n", t3)
-		}
 
+			// fmt.Printf("Column permutation: %v\n", columnPermutation)
+			// fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
+			// fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
+			// fmt.Printf("getCondNo = %d; getNo = %d\n\n", getCondNo, getNo)
+		}
 		for j := 0; j < 3; j++ {
 			processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]] = 0
 		}
@@ -332,39 +316,90 @@ func (processor *Processor) GetPerturbedRows(key []byte, columnPermutation []int
 		for processor.valueNoOffsets[disabledColumnsIndices[i]] < processor.columnChunksValuesNo[disabledColumnsIndices[i]+1]-
 			processor.columnChunksValuesNo[disabledColumnsIndices[i]] {
 
-			key0, err := processor.Client.ArrayGetElemKey(dirVal, key, processor.columnChunksValuesNo[disabledColumnsIndices[i]]+
+			k, err := processor.Client.ArrayGetElemKey(dirVal, key, processor.columnChunksValuesNo[disabledColumnsIndices[i]]+
 				processor.valueNoOffsets[disabledColumnsIndices[i]])
 			if err != nil {
 				return nil, err
 			}
-
-			page, err := processor.Client.Get(key0)
-			if err != nil {
-				return nil, err
-			}
-
-			var k int
-			if page[41] == 0x00 && page[42] == 0x03 {
-				k = 49
-			} else if page[41] == 0x02 && page[42] == 0x00 {
-				k = 47
-			}
-
-			for ; k < len(page); k += 8 {
-				bits := binary.LittleEndian.Uint64(page[k : k+8])
-				n := math.Float64frombits(bits)
-				outCols[disabledColumnsIndices[i]] = append(outCols[disabledColumnsIndices[i]], n)
-			}
-
+			keys = append(keys, k)
+			getNo++
 			processor.valueNoOffsets[disabledColumnsIndices[i]]++
-		}
 
+			// fmt.Printf("Column permutation: %v\n", columnPermutation)
+			// fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
+			// fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
+			// fmt.Printf("getCondNo = %d; getNo = %d\n\n", getCondNo, getNo)
+
+		}
 		processor.valueNoOffsets[disabledColumnsIndices[i]] = 0
 	}
 
-	// fmt.Printf("Column permutation: %v\n", columnPermutation)
-	// fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
-	// fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
+	fmt.Printf("Column permutation: %v\n", columnPermutation)
+	fmt.Printf("Column chunks values no: %v\n", processor.columnChunksValuesNo)
+	fmt.Printf("valueNoOffsets: %v\n", processor.valueNoOffsets)
+	fmt.Printf("getCondNo = %d; getNo = %d\n\n", getCondNo, getNo)
+
+	pages, err := processor.Client.GetBulkN(keys, getCondNo, getNo, n)
+	//pages, err := processor.Client.GetBulk(keys, getCondNo, getNo)
+	if err != nil {
+		return nil, err
+	}
+
+	outCols := make([][]float64, processor.ColumnsNo)
+	pagesIdx := 0
+	for i := 0; i < len(columnPermutation); i += 3 {
+		for {
+			done := false
+			for j := 0; j < 3; j++ {
+				if processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]] >=
+					processor.columnChunksValuesNo[enabledColumnsIndices[columnPermutation[i+j]]+1]-
+						processor.columnChunksValuesNo[enabledColumnsIndices[columnPermutation[i+j]]] {
+					done = true
+					break
+				}
+			}
+			if done {
+				break
+			}
+
+			for j := 0; j < 3; j++ {
+				if i+j < len(enabledColumnsIndices) {
+					for k := 0; k < len(pages[pagesIdx]); k += 8 {
+						bits := binary.LittleEndian.Uint64(pages[pagesIdx][k : k+8])
+						n := math.Float64frombits(bits)
+						outCols[enabledColumnsIndices[columnPermutation[i+j]]] = append(outCols[enabledColumnsIndices[columnPermutation[i+j]]], n)
+					}
+				}
+				pagesIdx++
+				processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]]++
+			}
+		}
+		for j := 0; j < 3; j++ {
+			processor.valueNoOffsets[enabledColumnsIndices[columnPermutation[i+j]]] = 0
+		}
+	}
+
+	for i := 0; i < len(disabledColumnsIndices); i++ {
+		for processor.valueNoOffsets[disabledColumnsIndices[i]] < processor.columnChunksValuesNo[disabledColumnsIndices[i]+1]-
+			processor.columnChunksValuesNo[disabledColumnsIndices[i]] {
+
+			var k int
+			if pages[pagesIdx][41] == 0x00 && pages[pagesIdx][42] == 0x03 {
+				k = 49
+			} else if pages[pagesIdx][41] == 0x02 && pages[pagesIdx][42] == 0x00 {
+				k = 47
+			}
+			for ; k < len(pages[pagesIdx]); k += 8 {
+				bits := binary.LittleEndian.Uint64(pages[pagesIdx][k : k+8])
+				n := math.Float64frombits(bits)
+				outCols[disabledColumnsIndices[i]] = append(outCols[disabledColumnsIndices[i]], n)
+			}
+			pagesIdx++
+			processor.valueNoOffsets[disabledColumnsIndices[i]]++
+
+		}
+		processor.valueNoOffsets[disabledColumnsIndices[i]] = 0
+	}
 
 	return outCols, nil
 }
