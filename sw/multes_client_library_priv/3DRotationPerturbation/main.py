@@ -10,6 +10,8 @@ from sklearn.ensemble._forest import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble._weight_boosting import AdaBoostClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing._data import StandardScaler
 
 # le = LabelEncoder()
 # df["job"] = le.fit_transform(df["job"])
@@ -28,17 +30,14 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 def test(in_file_path, used_features, output_feature):
     df = pd.read_csv(in_file_path)
 
-    #df[["age", "balance", "day", "campaign", "pdays", "previous"]] = df[["age", "balance", "day", "campaign", "pdays", "previous"]].round(0)
-    #df[["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "Age"]] = df[["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "Age"]].round(0)
-
-    #print(df.head())
-
     xx = df[used_features + [output_feature]]
+    xx[used_features] = xx[used_features].round(0)
     print(xx.head())
-
     print(xx.describe())
-
     print(xx.nunique())
+
+    sc = StandardScaler()
+    df[used_features] = sc.fit_transform(df[used_features])
 
     y = df[output_feature]
     x = df.drop([output_feature], axis=1)[used_features]
@@ -58,53 +57,55 @@ def test(in_file_path, used_features, output_feature):
     for model in models:
         model.fit(x_train, y_train)
         y_pred = model.predict(x_test)
-        print("{} {}:\nNumber of mislabeled points out of a total {} points : {}, performance {:05.2f}%\n"
+        tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+        print("{} {}:\n {}\n Accuracy = {:5.4f}\n Precision = {:5.4f}\n Recall = {:5.4f}"
             .format(
                 type(model).__name__,
                 in_file_path,
-                x_test.shape[0],
-                (y_test != y_pred).sum(),
-                100*(1-(y_test != y_pred).sum()/x_test.shape[0])
+                (tn, fp, fn, tp),
+                (tp+tn)/(tp+tn+fp+fn),
+                tp/(tp+fp),
+                tp/(tp+fn)
         ))
 
 # file_path1 = "bank_labeled.csv"
-# file_path2 = "bank_transformed.csv"
+# file_path2 = "bank_labeled_fpga.csv"
 
 # used_features =[
-#     "age",
-# 	#"job",
-# 	#"marital",
-# 	#"education",
-# 	#"default",
-# 	"balance",
-# 	#"housing",
-# 	#"loan",
-# 	#"contact",
-# 	"day",
-# 	#"month",
-# 	#"duration",
-# 	"campaign",
-# 	"pdays",
-# 	"previous",
-# 	#"poutcome"
+#     "Age",
+# 	"Job",
+# 	"Marital",
+# 	"Education",
+# 	"Default",
+# 	"Balance",
+# 	"Housing",
+# 	"Loan",
+# 	"Contact",
+# 	"Day",
+# 	"Month",
+# 	"Duration",
+# 	"Campaign",
+# 	"Pdays",
+# 	"Previous",
+# 	"Poutcome"
 # ]
 
-# output_feature = "y"
+# output_feature = "Y"
 
-# file_path1 = "banknote.csv"
-# file_path2 = "banknote_transformed.csv"
+# file_path1 = "banknote_s.csv"
+# file_path2 = "banknote_s_fpga.csv"
 
 # used_features =[
-#     "variance",
-#     "skewness",
-#     "curtosis",
-#     "entropy"
+#     "Variance",
+#     "Skewness",
+#     "Curtosis",
+#     "Entropy"
 # ]
 
-# output_feature = "class"
+# output_feature = "Class"
 
 file_path1 = "diabetes.csv"
-file_path2 = "diabetes_transformed.csv"
+file_path2 = "diabetes_fpga.csv"
 
 used_features =[
     "Pregnancies",

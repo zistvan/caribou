@@ -5,9 +5,6 @@ import (
 	"log"
 	"multes_client_library_priv/ops"
 	"multes_client_library_priv/parquet"
-	//"strings"
-	//"encoding/hex"
-	//"fmt"
 )
 
 func testParquet() {

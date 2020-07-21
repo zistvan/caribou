@@ -1,6 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# df = pd.read_csv("banknote.csv")
+# df = df.sample(frac=1)
+# df.to_csv("banknote_s.csv", index = None, header = True, float_format='%g')
+
 # le = LabelEncoder()
 # df["job"] = le.fit_transform(df["job"])
 # df["marital"] = le.fit_transform(df["marital"])
@@ -53,7 +57,6 @@ def test(in_file_path, used_features):
 
 # file_path1 = "banknote.csv"
 # file_path2 = "banknote_transformed.csv"
-# file_path3 = "banknote_noisy.csv"
 
 # used_features =[
 #     "variance",
@@ -64,7 +67,6 @@ def test(in_file_path, used_features):
 
 file_path1 = "diabetes.csv"
 file_path2 = "diabetes_transformed.csv"
-file_path3 = "diabetes_noisy.csv"
 
 used_features =[
     "Pregnancies",

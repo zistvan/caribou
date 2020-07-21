@@ -2,6 +2,7 @@
 package ops
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -15,6 +16,7 @@ const (
 	idxLen             = 2
 	maxKLen            = 8 - idxLen
 	perturbedGroupSize = 3
+	rotationMatrixKey  = "rotmat"
 )
 
 type keyError struct {
@@ -121,26 +123,21 @@ func (c Client) GetWithCheckpoint(key []byte, tokenBucketIdx int, tokensEachTick
 		MaxBurstSize: [2]byte{byte(maxBurstSize & 0xFF), byte((maxBurstSize >> 8) & 0xFF)}})
 
 	rh := internal.ValueResHandler{}
-
 	err := c.conn.Send(gOp, &rh)
-
 	if err != nil {
 		return nil, err
 	}
 
-	pRes := gOp.Result
-
-	if pRes == nil {
-		return nil, nil
-	}
-
-	return pRes, nil
+	return gOp.Result, nil
 }
 
-func (c Client) GetPerturbed(key [perturbedGroupSize][]byte) ([][]byte, error) {
-	rqs := make([]*internal.Operation, perturbedGroupSize)
+func (c Client) GetPerturbed(key [][]byte) ([][]byte, error) {
+	if len(key)%perturbedGroupSize != 0 {
+		return nil, fmt.Errorf("Error GetPerturbed: the number of keys should be multiple of perturbedGroupSize.")
+	}
 
-	for i := 0; i < perturbedGroupSize; i++ {
+	rqs := make([]*internal.Operation, len(key))
+	for i := 0; i < len(key); i++ {
 		if len(key[i]) > maxKLen {
 			return nil, newKeyError(maxKLen)
 		}
@@ -159,12 +156,11 @@ func (c Client) GetPerturbed(key [perturbedGroupSize][]byte) ([][]byte, error) {
 		return nil, err
 	}
 
-	results := make([][]byte, perturbedGroupSize)
+	results := make([][]byte, len(key))
 	for i, r := range rqs {
 		if r.Result == nil {
 			return nil, fmt.Errorf("Corrupted packet of key %x", r.Key)
 		}
-
 		results[i] = r.Result
 	}
 
@@ -225,44 +221,18 @@ func (c Client) GetBulkN(keys [][]byte, getCondNo int, getNo int, n int) ([][]by
 	return results, nil
 }
 
-func (c Client) GetBulk(keys [][]byte, getCondNo int, getNo int) ([][]byte, error) {
-	if getCondNo%perturbedGroupSize != 0 {
-		return nil, fmt.Errorf("Error GetBulk: getCondNo should be multiple of perturbedGroupSize.")
-	}
-
-	rqs := make([]*internal.Operation, getCondNo+getNo)
-	for i := 0; i < getCondNo+getNo; i++ {
-		initKey := make([]byte, len(keys[i])+idxLen)
-		copy(initKey[idxLen:], keys[i])
-		if i < getCondNo {
-			value := []byte{0xFF}
-			rqs[i] = internal.NewGetCondOp(initKey, value)
-		} else {
-			rqs[i] = internal.NewGetOp(initKey)
+func (c Client) SetRotationMatrix(matrix [][]float64) error {
+	matrixBytes := make([]byte, 8*len(matrix)*len(matrix[0]))
+	for i := 0; i < len(matrix[0]); i++ {
+		for j := 0; j < len(matrix); j++ {
+			binary.LittleEndian.PutUint64(matrixBytes[(i*len(matrix)+j)*8:(i*len(matrix)+j)*8+8], math.Float64bits(matrix[j][i]))
 		}
 	}
-
-	rh := internal.ValueResHandler{}
-	err := c.conn.SendBulk(rqs, &rh)
-	if err != nil {
-		return nil, err
-	}
-
-	results := make([][]byte, getCondNo+getNo)
-	for i, r := range rqs {
-		if r.Result == nil {
-			return nil, fmt.Errorf("Corrupted packet of key %x", r.Key)
-		}
-		results[i] = r.Result
-	}
-
-	return results, nil
+	return c.Set([]byte(rotationMatrixKey), matrixBytes)
 }
 
-func (c Client) GetRotationMatrix(key []byte) error {
-	if len(key) > maxKLen {
-		return newKeyError(maxKLen)
-	}
+func (c Client) GetRotationMatrix() error {
+	key := []byte(rotationMatrixKey)
 
 	initKey := make([]byte, len(key)+idxLen)
 	copy(initKey[idxLen:], key)
@@ -271,7 +241,6 @@ func (c Client) GetRotationMatrix(key []byte) error {
 
 	op := internal.NewGetCondOp(initKey, value)
 
-	//rh := internal.NoResHandler{}
 	rh := internal.ValueResHandler{}
 
 	return c.conn.Send(op, &rh)

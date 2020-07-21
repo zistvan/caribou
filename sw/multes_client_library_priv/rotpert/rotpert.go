@@ -1,8 +1,9 @@
 package rotpert
 
 import (
-	"fmt"
 	"math"
+	"math/rand"
+	"time"
 )
 
 const minNormalization = 0
@@ -190,13 +191,13 @@ func GetBestRotationMatrix(data [][]float64, columnPermutation []int) [][]float6
 	}
 
 	if maxPrivacyXY >= maxPrivacyYZ && maxPrivacyXY >= maxPrivacyXZ {
-		fmt.Printf("XY %d\n", bestAngleXY)
+		//fmt.Printf("XY %d\n", bestAngleXY)
 		return rotationMatrixXY(float64(bestAngleXY) * math.Pi / 180.0)
 	} else if maxPrivacyYZ >= maxPrivacyXY && maxPrivacyYZ >= maxPrivacyXZ {
-		fmt.Printf("YZ %d\n", bestAngleYZ)
+		//fmt.Printf("YZ %d\n", bestAngleYZ)
 		return rotationMatrixYZ(float64(bestAngleYZ) * math.Pi / 180.0)
 	} else {
-		fmt.Printf("XZ %d\n", bestAngleXZ)
+		//fmt.Printf("XZ %d\n", bestAngleXZ)
 		return rotationMatrixXZ(float64(bestAngleXZ) * math.Pi / 180.0)
 	}
 }
@@ -204,7 +205,7 @@ func GetBestRotationMatrix(data [][]float64, columnPermutation []int) [][]float6
 func RotationTransformation(data [][]float64) [][]float64 {
 	normalizedData := Normalize(data)
 
-	columnPermutation := RandomPermutation(len(data[0]))
+	columnPermutation := ColumnPermutation(len(data[0]), false)
 
 	rotationMatrix := GetBestRotationMatrix(normalizedData, columnPermutation)
 
@@ -213,41 +214,40 @@ func RotationTransformation(data [][]float64) [][]float64 {
 	return transformedData
 }
 
-func RandomPermutation(size int) []int {
+func ColumnPermutation(size int, ordered bool) []int {
 	permutation := make([]int, size)
 	for i := range permutation {
 		permutation[i] = i
 	}
 
-	// randomSource := rand.NewSource(time.Now().UnixNano())
-	// random := rand.New(randomSource)
-	// for i := size; i > 1; i-- {
-	// 	pick := random.Intn(i)
-	// 	permutation[pick], permutation[i-1] = permutation[i-1], permutation[pick]
-	// }
+	if ordered {
+		if size%3 == 0 {
+			return permutation
+		} else {
+			for i := 3 - size%3; i > 0; i-- {
+				permutation = append(permutation, size-4+i)
+			}
+			return permutation
+		}
+	} else {
+		randomSource := rand.NewSource(time.Now().UnixNano())
+		random := rand.New(randomSource)
+		for i := size; i > 1; i-- {
+			pick := random.Intn(i)
+			permutation[pick], permutation[i-1] = permutation[i-1], permutation[pick]
+		}
 
-	// permutation[0] = 0
-	// permutation[1] = 1
-	// permutation[2] = 2
-	// permutation[3] = 3
-	// permutation[4] = 4
-	// permutation[5] = 5
-	// permutation[6] = 6
-	// permutation[7] = 7
-	// permutation[8] = 8
-
-	permutation = append(permutation, 5)
-	return permutation
-
-	// if size%3 == 0 {
-	// 	return permutation
-	// } else {
-	// 	i := 3 - size%3
-	// 	for i > 0 {
-	// 		pick := random.Intn(size)
-	// 		permutation = append(permutation, pick)
-	// 		i--
-	// 	}
-	// 	return permutation
-	// }
+		if size%3 == 0 {
+			return permutation
+		} else {
+			for i := 0; i < 3-size%3; i++ {
+				pick := permutation[size-1+i]
+				for pick == permutation[size-1+i] || pick == permutation[size-2+i] {
+					pick = random.Intn(size)
+				}
+				permutation = append(permutation, pick)
+			}
+			return permutation
+		}
+	}
 }

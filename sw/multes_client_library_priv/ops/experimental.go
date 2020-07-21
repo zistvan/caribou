@@ -1,13 +1,9 @@
 package ops
 
 import (
-	//"encoding/binary"
 	"math"
-	//"os"
 
 	"multes_client_library_priv/internal"
-	//"gitlab.software.imdea.org/fpga/multes/sw/client-library/ops/parquet"
-	//"gitlab.software.imdea.org/fpga/multes/sw/client-library/ops/parquet/transformable"
 )
 
 // BatchSet performs several high-level sets in a single batch on network level

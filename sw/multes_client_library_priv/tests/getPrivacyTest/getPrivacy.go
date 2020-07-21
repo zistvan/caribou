@@ -58,12 +58,12 @@ func main() {
 		log.Fatalf("Error set: %s\n", err)
 	}
 
-	err = c.GetRotationMatrix([]byte("rotmat"))
+	err = c.GetRotationMatrix()
 	if err != nil {
 		log.Fatalf("Error GetRotationMatrix: %s\n", err)
 	}
 
-	results, err := c.GetPerturbed([3][]byte{[]byte(strconv.Itoa(1)), []byte(strconv.Itoa(2)), []byte(strconv.Itoa(3))})
+	results, err := c.GetPerturbed([][]byte{[]byte(strconv.Itoa(1)), []byte(strconv.Itoa(2)), []byte(strconv.Itoa(3))})
 	if err != nil {
 		log.Fatalf("Error GetPerturbed: %s\n", err)
 	}
