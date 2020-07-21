@@ -25,14 +25,14 @@ module MatrixVectorMultiplicationGroup
 
 wire rst_n;
 
-(* mark_debug = "true" *)wire [VECTOR_SIZE*VECTOR_SIZE*ENTRY_SIZE-1:0] matrix_datas[0:MULTIPLICATION_ENGINES_NO-1];
-(* mark_debug = "true" *)wire [VECTOR_SIZE*ENTRY_SIZE-1:0] vector_datas[0:MULTIPLICATION_ENGINES_NO-1];
-(* mark_debug = "true" *)wire [MULTIPLICATION_ENGINES_NO-1:0] in_valids;
-(* mark_debug = "true" *)wire [MULTIPLICATION_ENGINES_NO-1:0] in_readys;
+wire [VECTOR_SIZE*VECTOR_SIZE*ENTRY_SIZE-1:0] matrix_datas[0:MULTIPLICATION_ENGINES_NO-1];
+wire [VECTOR_SIZE*ENTRY_SIZE-1:0] vector_datas[0:MULTIPLICATION_ENGINES_NO-1];
+wire [MULTIPLICATION_ENGINES_NO-1:0] in_valids;
+wire [MULTIPLICATION_ENGINES_NO-1:0] in_readys;
 
-(* mark_debug = "true" *)wire [VECTOR_SIZE*ENTRY_SIZE-1:0] res_datas[0:MULTIPLICATION_ENGINES_NO-1];
-(* mark_debug = "true" *)wire [MULTIPLICATION_ENGINES_NO-1:0] res_valids;
-(* mark_debug = "true" *)wire [MULTIPLICATION_ENGINES_NO-1:0] res_readys;
+wire [VECTOR_SIZE*ENTRY_SIZE-1:0] res_datas[0:MULTIPLICATION_ENGINES_NO-1];
+wire [MULTIPLICATION_ENGINES_NO-1:0] res_valids;
+wire [MULTIPLICATION_ENGINES_NO-1:0] res_readys;
 
 reg [$clog2(MULTIPLICATION_ENGINES_NO)-1:0] cur_in_engine_addr = 0;
 reg [$clog2(MULTIPLICATION_ENGINES_NO)-1:0] cur_out_engine_addr = 0;
@@ -86,7 +86,7 @@ assign out_valid = res_valids[cur_out_engine_addr];
 
 nukv_fifogen #(
     .DATA_SIZE(8*VALUE_SIZE_BYTES_NO),
-    .ADDR_BITS(4)
+    .ADDR_BITS(5)
 ) fifo_output (
     .clk(clk),
     .rst(rst),

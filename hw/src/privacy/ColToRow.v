@@ -22,8 +22,6 @@ module ColToRow
 	input  wire output_ready
 );
 
-//localparam WORD_OFFSET = (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO)) % (COL_WIDTH/8);
-
 reg [$clog2(COL_COUNT)-1:0] current_buffer_engine;
 
 wire [MEMORY_WIDTH:0] buffer_input_data [COL_COUNT-1:0];
@@ -34,7 +32,7 @@ wire [MEMORY_WIDTH:0] buffer_output_data [COL_COUNT-1:0];
 wire [COL_COUNT-1:0] buffer_output_valid;
 reg [COL_COUNT-1:0] buffer_output_ready;
 
-(* mark_debug = "true" *)reg [MEMORY_WIDTH-1:0] colword_buf [COL_COUNT-1:0];
+reg [MEMORY_WIDTH-1:0] colword_buf [COL_COUNT-1:0];
 reg [COL_COUNT-1:0] colword_last;
 reg [$clog2(MEMORY_WIDTH)-1:0] colword_addr [COL_COUNT-1:0];
 
@@ -48,15 +46,14 @@ wire assembled_valid;
 wire assembled_last;
 wire assembled_ready;
 
-(* mark_debug = "true" *)reg [$clog2(COL_WIDTH/8)-1:0] offset [COL_COUNT-1:0];
+reg [$clog2(COL_WIDTH/8)-1:0] offset [COL_COUNT-1:0];
 
 integer idx, byte;
 
 genvar i;
 generate  
     for (i=0; i < COL_COUNT; i = i + 1)  
-	begin: generateloop		
-			    
+	begin: generateloop
 			nukv_fifogen #(
 			    .DATA_SIZE(MEMORY_WIDTH+1),
 			    .ADDR_BITS(9)

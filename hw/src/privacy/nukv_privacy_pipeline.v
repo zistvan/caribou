@@ -43,6 +43,43 @@ module nukv_Privacy_Pipeline
 
 );
 
+    reg [1:0] skip_blocks;
+    reg first_cnt_word;
+    (* mark_debug = "true" *)reg [63:0] cnt_valid;
+    (* mark_debug = "true" *)reg [63:0] cnt_last;
+    
+    always @(posedge clk) begin
+        if (rst == 1) begin
+            cnt_valid <= 0;
+            cnt_last <= 0;
+            skip_blocks <= 0;
+            first_cnt_word <= 1;
+        end else begin
+            if (skip_blocks < 3) begin
+                if (output_valid == 1 && output_ready == 1 && output_last == 1) begin
+                    skip_blocks <= skip_blocks + 1;
+                end
+            end else begin
+                if (first_cnt_word == 1) begin
+                    if (output_valid == 1 && output_ready == 1) begin
+                        first_cnt_word <= 0;
+                        cnt_valid <= 1;
+                        if (output_last == 1) begin
+                            cnt_last <= 1;
+                        end
+                    end
+                end else begin
+                    if (output_valid == 1 && output_ready == 1) begin
+                        cnt_valid <= cnt_valid + 1;
+                        if (output_last == 1) begin
+                            cnt_last <= cnt_last + 1;
+                        end
+                    end
+                end
+            end
+        end
+    end
+
     wire [MEMORY_WIDTH-1:0] seg_data;
     wire seg_valid;
     wire seg_last;
@@ -150,7 +187,7 @@ module nukv_Privacy_Pipeline
 
     nukv_fifogen #(
     .DATA_SIZE(MEMORY_WIDTH+1),
-    .ADDR_BITS(8)
+    .ADDR_BITS(10)
     ) fifo_bypass (
         .clk(clk),
         .rst(rst),

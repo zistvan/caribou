@@ -377,7 +377,7 @@ end component;
       signal mrdel_data : std_logic_vector(64*512-1 downto 0);
       signal mrdel_empty : std_logic_vector(63 downto 0);
       
-      signal counter: std_logic_vector(31 downto 0) := (others => '0');
+      signal count : std_logic_vector(63 downto 0) := (others => '0');
 
 begin
 
@@ -671,7 +671,7 @@ mockmem_bitmap : entity work.kvs_tbDRAM_Module
       
     else
     
-      counter <= counter + 1;
+      count <= count + 1;
     
       mrdel_data(64*512-1 downto 63*512) <= d_rd_data;
       mrdel_empty(63) <= d_rd_data_empty;
