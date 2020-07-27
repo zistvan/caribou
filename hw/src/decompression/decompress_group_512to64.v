@@ -21,10 +21,9 @@
 
 module decompress_group_512to64
 #(
-    parameter META_WIDTH = 96,
     parameter MEMORY_WIDTH = 512,
     parameter DECOMPRESS_MODE_SIZE = 8,
-    parameter DECOMPRESS_ENGINES_NO = 16,
+    parameter DECOMPRESS_ENGINES_NO = 24,
     parameter VALUE_SIZE_BYTES_NO = 2,
     localparam WORD_SIZE = 512,
     localparam DECOMPRESS_WORD_SIZE = 64
@@ -37,18 +36,18 @@ module decompress_group_512to64
     input wire in_valid,
     output reg in_ready,
     
-    input wire [1+META_WIDTH+MEMORY_WIDTH-1:0] in_predconf_data,
-    input wire in_predconf_valid,
-    output reg in_predconf_ready,
+    input wire [MEMORY_WIDTH-1:0] in_pred_data,
+    input wire in_pred_valid,
+    output reg in_pred_ready,
     
     output reg [WORD_SIZE-1:0] out_data,
     output reg out_valid,
     output reg out_last,
     input wire out_ready,
     
-    output reg [1+META_WIDTH+MEMORY_WIDTH-1:0] out_predconf_data,
-    output reg out_predconf_valid,
-    input wire out_predconf_ready
+    output reg [MEMORY_WIDTH-1:0] out_pred_data,
+    output reg out_pred_valid,
+    input wire out_pred_ready
 );
 
 reg [DECOMPRESS_MODE_SIZE-1:0] mode_data_buf;
@@ -177,8 +176,8 @@ always @(posedge clk) begin
         value_bytes_counter <= 0;
         in_last <= 0;
         in_ready <= 1;
-        in_predconf_ready <= 1;
-        out_predconf_valid <= 0;
+        in_pred_ready <= 1;
+        out_pred_valid <= 0;
         out_valid <= 0;
         out_last <= 0;
         out_data <= 0;
@@ -196,26 +195,25 @@ always @(posedge clk) begin
         in_data_decompress <= 0;
     end else begin
         // mode data round-robin logic
-        if (in_predconf_valid == 1 && in_predconf_ready == 1) begin
-            if (in_predconf_data[1+META_WIDTH +: 8*VALUE_SIZE_BYTES_NO] == 0 || in_predconf_data[1+META_WIDTH +: 8*VALUE_SIZE_BYTES_NO] == 2) begin
+        if (in_pred_valid == 1 && in_pred_ready == 1) begin
+            if (in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] == 0 || in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] == 2) begin
                 mode_data_buf <= 0;
-                out_predconf_data[1+META_WIDTH +: MEMORY_WIDTH] <= in_predconf_data[1+META_WIDTH +: MEMORY_WIDTH];
+                out_pred_data <= in_pred_data;
             end else begin
-                mode_data_buf <= in_predconf_data[1+META_WIDTH+8*VALUE_SIZE_BYTES_NO +: DECOMPRESS_MODE_SIZE];
-                out_predconf_data[1+META_WIDTH +: 8*VALUE_SIZE_BYTES_NO] <= in_predconf_data[1+META_WIDTH +: 8*VALUE_SIZE_BYTES_NO] - 1;
-                out_predconf_data[1+META_WIDTH+8*VALUE_SIZE_BYTES_NO +: MEMORY_WIDTH-8*VALUE_SIZE_BYTES_NO] <= // shift
-                    in_predconf_data[1+META_WIDTH+8*VALUE_SIZE_BYTES_NO+DECOMPRESS_MODE_SIZE +: MEMORY_WIDTH-8*VALUE_SIZE_BYTES_NO-DECOMPRESS_MODE_SIZE];
+                mode_data_buf <= in_pred_data[8*VALUE_SIZE_BYTES_NO +: DECOMPRESS_MODE_SIZE];
+                out_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] <= in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] - DECOMPRESS_MODE_SIZE/8;
+                out_pred_data[8*VALUE_SIZE_BYTES_NO +: MEMORY_WIDTH-8*VALUE_SIZE_BYTES_NO] <= // shift
+                    in_pred_data[8*VALUE_SIZE_BYTES_NO+DECOMPRESS_MODE_SIZE +: MEMORY_WIDTH-8*VALUE_SIZE_BYTES_NO-DECOMPRESS_MODE_SIZE];
             end
-            in_predconf_ready <= 0;
+            in_pred_ready <= 0;
             mode_valids[cur_in_engine_addr] <= 1;
-            out_predconf_data[0 +: 1+META_WIDTH] <= in_predconf_data[0 +: 1+META_WIDTH];
-            out_predconf_valid <= 1;
+            out_pred_valid <= 1;
         end else begin
             if (mode_readys[cur_in_engine_addr] == 1) begin
                 mode_valids <= 0;
             end
-            if (out_predconf_valid == 1 && out_predconf_ready == 1) begin
-                out_predconf_valid <= 0;
+            if (out_pred_valid == 1 && out_pred_ready == 1) begin
+                out_pred_valid <= 0;
             end
         end
         
@@ -253,6 +251,10 @@ always @(posedge clk) begin
                     in_valids[cur_in_engine_addr] <= 1;
                     in_data_buf_addr <= in_data_buf_addr + DECOMPRESS_WORD_SIZE;
                     
+                    if (in_data_buf_addr == WORD_SIZE - DECOMPRESS_WORD_SIZE) begin
+                        in_ready <= 1;
+                    end
+                    
                     if (value_bytes_counter <= DECOMPRESS_WORD_SIZE/8) begin
                         in_last <= 1;
                         first_word_flag <= 1;
@@ -267,7 +269,7 @@ always @(posedge clk) begin
                     in_valids <= 0;
                     if (in_last == 1) begin
                         in_last <= 0;
-                        in_predconf_ready <= 1;
+                        in_pred_ready <= 1;
                         if (cur_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
                             cur_in_engine_addr <= 0;
                         end else begin

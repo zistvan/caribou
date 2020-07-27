@@ -3,8 +3,7 @@ module nukv_Rotation_Module
     parameter MEMORY_WIDTH = 512,
     parameter COL_COUNT = 3,
     parameter COL_WIDTH = 64,
-    parameter VALUE_SIZE_BYTES_NO = 2,
-	parameter VALUE_HEADER_BYTES_NO = 49
+    parameter VALUE_SIZE_BYTES_NO = 2
 )
 (
 	input wire         clk,
@@ -52,8 +51,7 @@ module nukv_Rotation_Module
    	    .MEMORY_WIDTH(MEMORY_WIDTH),
    	    .COL_COUNT(COL_COUNT),
    	    .COL_WIDTH(COL_WIDTH),
-   	    .VALUE_SIZE_BYTES_NO(VALUE_SIZE_BYTES_NO),
-   	    .VALUE_HEADER_BYTES_NO(VALUE_HEADER_BYTES_NO)
+   	    .VALUE_SIZE_BYTES_NO(VALUE_SIZE_BYTES_NO)
    	) col_to_row (
         .clk(clk),
         .rst(rst),

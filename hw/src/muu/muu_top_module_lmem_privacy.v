@@ -1711,6 +1711,15 @@ wire cond_valid;
 wire cond_ready;
 wire cond_drop;
 
+wire [511:0] value_read_data_decompress;
+wire value_read_valid_decompress;
+wire value_read_last_decompress;
+wire value_read_ready_decompress;
+
+wire [511:0] pred_data_decompress;
+wire pred_valid_decompress;
+wire pred_ready_decompress;
+
 generate
     if (PRIVACY_ENABLED==0) begin
         //no filters in the project, cuts out whole part
@@ -1725,26 +1734,47 @@ generate
     end
     else begin
         //need to wire in filters
-
-        nukv_Privacy_Pipeline priv_pipe (
-
+        
+        decompress_group_512to64 decompressor (
             .clk(clk),
             .rst(rst),
             
-            .pred_data(predconf_b_data[EXT_META_WIDTH +: MEMORY_WIDTH]),
-            .pred_valid(predconf_b_valid),
-            .pred_ready(predconf_b_ready),
+            .in_data(value_read_data_buf),
+            .in_valid(value_read_valid_buf),
+            .in_ready(value_read_ready_buf),
+            
+            .in_pred_data(predconf_b_data[EXT_META_WIDTH +: MEMORY_WIDTH]),
+            .in_pred_valid(predconf_b_valid),
+            .in_pred_ready(predconf_b_ready),
+            
+            .out_data(value_read_data_decompress),
+            .out_valid(value_read_valid_decompress),
+            .out_last(value_read_last_decompress),
+            .out_ready(value_read_ready_decompress),
+            
+            .out_pred_data(pred_data_decompress),
+            .out_pred_valid(pred_valid_decompress),
+            .out_pred_ready(pred_ready_decompress)
+        );
 
-            .value_data(value_read_data_buf),
-            .value_valid(value_read_valid_buf),
-            .value_ready(value_read_ready_buf),
+        nukv_Privacy_Pipeline priv_pipe (
+            .clk(clk),
+            .rst(rst),
+            
+            .pred_data(pred_data_decompress),
+            .pred_valid(pred_valid_decompress),
+            .pred_ready(pred_ready_decompress),
+
+            .value_data(value_read_data_decompress),
+            .value_valid(value_read_valid_decompress),
+            .value_last(value_read_last_decompress),
+            .value_ready(value_read_ready_decompress),
 
             .output_valid(value_frompipe_valid),
             .output_ready(value_frompipe_ready),
             .output_data(value_frompipe_data),
             .output_last(value_frompipe_last)            
-
-                );
+        );
 
         assign value_frompipe_drop = 0;
 

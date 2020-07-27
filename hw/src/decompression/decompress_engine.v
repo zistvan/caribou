@@ -91,6 +91,7 @@ reg [7:0] window_read_byte;
 reg [$clog2(WORD_SIZE)-1:0] out_data_addr;
 
 reg first_out_byte_flag = 1; // must be set every time I wait for a new BLOCK
+
 reg read_delay_flag;
 
 always @(posedge clk) begin
@@ -200,8 +201,9 @@ always @(posedge clk) begin
                             end else begin
                                 uncompressed_block_size[uncompressed_block_size_addr +: 7] <= cur_word[cur_byte_addr +: 7];
                                 out_data[out_data_addr +: 7] <= cur_word[cur_byte_addr +: 7];
-                                out_data_addr <= 32;
+                                out_data_addr <= 16;
                                 cur_byte_addr <= cur_byte_addr + 8;
+                                prev_state <= GET_UNCOMPRESSED_BLOCK_SIZE;
                                 state <= GET_BOUNDARY_BYTE;
                             end
                         end
@@ -214,6 +216,9 @@ always @(posedge clk) begin
                                 state <= WAIT_WORD;
                             end else begin
                                 in_ready <= 0;
+                                if (prev_state == GET_UNCOMPRESSED_BLOCK_SIZE) begin
+                                    out_data[0 +: 16] <= out_data[0 +: 16] + 2;
+                                end
                                 prev_state <= GET_BOUNDARY_BYTE;
                                 case (cur_word[cur_byte_addr +: 2])
                                     `LITERAL_TAG: begin

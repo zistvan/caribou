@@ -3,8 +3,7 @@ module ColToRow
     parameter MEMORY_WIDTH = 512, // constraint: 8 * (VALUE_SIZE_BYTES_NO + VALUE_HEADER_BYTES_NO) <= MEMORY_WIDTH
 	parameter COL_COUNT = 3,
 	parameter COL_WIDTH = 64,
-	parameter VALUE_SIZE_BYTES_NO = 2,
-	parameter VALUE_HEADER_BYTES_NO = 3
+	parameter VALUE_SIZE_BYTES_NO = 2
 )
 (
 	input wire clk,
@@ -128,24 +127,24 @@ always @(posedge clk) begin
             
             if (buffer_output_ready[idx] == 0 && assembled_valid_pre[idx] == 0) begin
                 if (first_word_flag[idx] == 1) begin
-                    // we have to strip the page header whose size is not always the same
-                    if (colword_buf[idx][8*(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO) +: 16] == 16'h0002) begin
-                        value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - VALUE_HEADER_BYTES_NO - 6;
-                        colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + VALUE_HEADER_BYTES_NO + 6);
+                    // HACK: there are some unwanted bytes in the beginning of the page
+                    if (colword_buf[idx][8*VALUE_SIZE_BYTES_NO +: 8] == 8'h02) begin
+                        value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - 6;
+                        colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + 6);
                         first_word_flag[idx] <= 0;
                         if (idx == 0) begin
-                            value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_HEADER_BYTES_NO - 6;
+                            value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - 6;
                         end
-                        offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO + 6)) % (COL_WIDTH/8);
+                        offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 6)) % (COL_WIDTH/8);
                     end else begin
-                        if (colword_buf[idx][8*(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO) +: 16] == 16'h0300) begin
-                            value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - VALUE_HEADER_BYTES_NO - 8;
-                            colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + VALUE_HEADER_BYTES_NO + 8);
+                        if (colword_buf[idx][8*VALUE_SIZE_BYTES_NO +: 8] == 8'h03) begin
+                            value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - 7;
+                            colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + 7);
                             first_word_flag[idx] <= 0;
                             if (idx == 0) begin
-                                value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_HEADER_BYTES_NO - 8;
+                                value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - 7;
                             end
-                            offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO+VALUE_HEADER_BYTES_NO + 8)) % (COL_WIDTH/8);
+                            offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 7)) % (COL_WIDTH/8);
                         end
                     end
                 end else begin

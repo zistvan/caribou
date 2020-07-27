@@ -21,8 +21,7 @@ module nukv_Privacy_Pipeline
 	parameter MEMORY_WIDTH = 512,
 	parameter COL_COUNT = 3,
     parameter COL_WIDTH = 64,
-    parameter VALUE_SIZE_BYTES_NO = 2,
-	parameter VALUE_HEADER_BYTES_NO = 41
+    parameter VALUE_SIZE_BYTES_NO = 2
 )
 (
 	input wire clk,
@@ -34,6 +33,7 @@ module nukv_Privacy_Pipeline
 
 	(* mark_debug = "true" *)input wire [MEMORY_WIDTH-1:0] value_data,
 	(* mark_debug = "true" *)input wire value_valid,
+	(* mark_debug = "true" *)input wire value_last,
 	(* mark_debug = "true" *)output wire value_ready,
 
 	(* mark_debug = "true" *)output wire [MEMORY_WIDTH-1:0] output_data,
@@ -162,19 +162,24 @@ module nukv_Privacy_Pipeline
 
     assign ic_ready = ic_ready_fifo & seg_valid & seg_last & seg_ready;
     assign ic_valid_masked = ic_valid & ic_ready;
+    
+    assign seg_data = value_data;
+    assign seg_valid = segmenter_valid;
+    assign seg_last = value_last;
+    assign segmenter_ready = seg_ready;
 
-    nukv_Value_Segmenter segmenter (
-        .clk(clk),
-        .rst(rst),
-        .value_data(value_data),
-        .value_valid(segmenter_valid),
-        .value_ready(segmenter_ready),
+//    nukv_Value_Segmenter segmenter (
+//        .clk(clk),
+//        .rst(rst),
+//        .value_data(value_data),
+//        .value_valid(segmenter_valid),
+//        .value_ready(segmenter_ready),
 
-        .output_data(seg_data),
-        .output_last(seg_last),
-        .output_valid(seg_valid),
-        .output_ready(seg_ready)
-    );
+//        .output_data(seg_data),
+//        .output_last(seg_last),
+//        .output_valid(seg_valid),
+//        .output_ready(seg_ready)
+//    );
 
     assign imed_data[0] = seg_data;
     assign imed_last[0] = seg_last;    
@@ -224,8 +229,7 @@ module nukv_Privacy_Pipeline
         .MEMORY_WIDTH(MEMORY_WIDTH),
         .COL_COUNT(COL_COUNT),
    	    .COL_WIDTH(COL_WIDTH),
-   	    .VALUE_SIZE_BYTES_NO(VALUE_SIZE_BYTES_NO),
-   	    .VALUE_HEADER_BYTES_NO(VALUE_HEADER_BYTES_NO)
+   	    .VALUE_SIZE_BYTES_NO(VALUE_SIZE_BYTES_NO)
     ) rotation_perturb (
         .clk(clk),
         .rst(rst),
