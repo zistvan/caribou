@@ -1,27 +1,7 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 09/06/2019 03:27:27 PM
-// Design Name: 
-// Module Name: decompress_group_512to64
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
 module decompress_group_512to64
 #(
-    parameter MEMORY_WIDTH = 512,
     parameter DECOMPRESS_MODE_SIZE = 8,
     parameter DECOMPRESS_ENGINES_NO = 24,
     parameter VALUE_SIZE_BYTES_NO = 2,
@@ -36,7 +16,7 @@ module decompress_group_512to64
     input wire in_valid,
     output reg in_ready,
     
-    input wire [MEMORY_WIDTH-1:0] in_pred_data,
+    input wire [WORD_SIZE-1:0] in_pred_data,
     input wire in_pred_valid,
     output reg in_pred_ready,
     
@@ -45,10 +25,14 @@ module decompress_group_512to64
     output reg out_last,
     input wire out_ready,
     
-    output reg [MEMORY_WIDTH-1:0] out_pred_data,
-    output reg out_pred_valid,
+    output wire [WORD_SIZE-1:0] out_pred_data,
+    output wire out_pred_valid,
     input wire out_pred_ready
 );
+
+reg [WORD_SIZE-1:0] out_pred_data_interm;
+reg out_pred_valid_interm;
+wire out_pred_ready_interm;
 
 reg [DECOMPRESS_MODE_SIZE-1:0] mode_data_buf;
 
@@ -91,13 +75,14 @@ reg first_word_flag = 1;
 reg [8*VALUE_SIZE_BYTES_NO-1:0] value_bytes_counter;
 
 reg [$clog2(DECOMPRESS_ENGINES_NO)-1:0] cur_in_engine_addr = 0;
+reg [$clog2(DECOMPRESS_ENGINES_NO)-1:0] prev_in_engine_addr = DECOMPRESS_ENGINES_NO-1;
 reg [$clog2(DECOMPRESS_ENGINES_NO)-1:0] cur_out_engine_addr = 0;
 
 genvar i;
 generate
     for (i = 0; i < DECOMPRESS_ENGINES_NO; i = i + 1) begin
         nukv_fifogen #(
-            .ADDR_BITS(8),
+            .ADDR_BITS(9),
             .DATA_SIZE(DECOMPRESS_MODE_SIZE)
         ) fifo_mode (
             .clk(clk),
@@ -114,7 +99,7 @@ generate
         );
         
         nukv_fifogen #(
-            .ADDR_BITS(8),
+            .ADDR_BITS(9),
             .DATA_SIZE(DECOMPRESS_WORD_SIZE)
         ) fifo_in (
             .clk(clk),
@@ -152,7 +137,7 @@ generate
         );
         
         nukv_fifogen #(
-            .ADDR_BITS(8),
+            .ADDR_BITS(9),
             .DATA_SIZE(DECOMPRESS_WORD_SIZE+1)
         ) fifo_out (
             .clk(clk),
@@ -170,14 +155,30 @@ generate
     end
 endgenerate
 
+nukv_fifogen #(
+    .ADDR_BITS(9),
+    .DATA_SIZE(WORD_SIZE)
+) fifo_mode (
+    .clk(clk),
+    .rst(rst),
+    
+    .s_axis_tdata(out_pred_data_interm),
+    .s_axis_tvalid(out_pred_valid_interm),
+    .s_axis_tready(out_pred_ready_interm),
+    
+    .m_axis_tdata(out_pred_data),
+    .m_axis_tvalid(out_pred_valid),
+    .m_axis_tready(out_pred_ready)
+);
+
 always @(posedge clk) begin
-    if (rst == 1) begin
-        first_word_flag <= 1;
+if (rst == 1) begin
+    first_word_flag <= 1;
         value_bytes_counter <= 0;
         in_last <= 0;
         in_ready <= 1;
         in_pred_ready <= 1;
-        out_pred_valid <= 0;
+        out_pred_valid_interm <= 0;
         out_valid <= 0;
         out_last <= 0;
         out_data <= 0;
@@ -187,6 +188,7 @@ always @(posedge clk) begin
         out_readys <= 0;
         
         cur_in_engine_addr <= 0;
+        prev_in_engine_addr <= DECOMPRESS_ENGINES_NO-1;
         cur_out_engine_addr <= 0;
         
         out_data_addr <= 0;
@@ -196,25 +198,24 @@ always @(posedge clk) begin
     end else begin
         // mode data round-robin logic
         if (in_pred_valid == 1 && in_pred_ready == 1) begin
-            if (in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] == 0 || in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] == 2) begin
+            if (in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] <= 2) begin
                 mode_data_buf <= 0;
-                out_pred_data <= in_pred_data;
+                out_pred_data_interm <= in_pred_data;
             end else begin
                 mode_data_buf <= in_pred_data[8*VALUE_SIZE_BYTES_NO +: DECOMPRESS_MODE_SIZE];
-                out_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] <= in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] - DECOMPRESS_MODE_SIZE/8;
-                out_pred_data[8*VALUE_SIZE_BYTES_NO +: MEMORY_WIDTH-8*VALUE_SIZE_BYTES_NO] <= // shift
-                    in_pred_data[8*VALUE_SIZE_BYTES_NO+DECOMPRESS_MODE_SIZE +: MEMORY_WIDTH-8*VALUE_SIZE_BYTES_NO-DECOMPRESS_MODE_SIZE];
+                out_pred_data_interm[0 +: 8*VALUE_SIZE_BYTES_NO] <= in_pred_data[0 +: 8*VALUE_SIZE_BYTES_NO] - DECOMPRESS_MODE_SIZE/8;
+                out_pred_data_interm[8*VALUE_SIZE_BYTES_NO +: WORD_SIZE-8*VALUE_SIZE_BYTES_NO] <= // shift
+                    in_pred_data[8*VALUE_SIZE_BYTES_NO+DECOMPRESS_MODE_SIZE +: WORD_SIZE-8*VALUE_SIZE_BYTES_NO-DECOMPRESS_MODE_SIZE];
             end
             in_pred_ready <= 0;
             mode_valids[cur_in_engine_addr] <= 1;
-            out_pred_valid <= 1;
-        end else begin
-            if (mode_readys[cur_in_engine_addr] == 1) begin
-                mode_valids <= 0;
-            end
-            if (out_pred_valid == 1 && out_pred_ready == 1) begin
-                out_pred_valid <= 0;
-            end
+            out_pred_valid_interm <= 1;
+        end
+        if (mode_valids[cur_in_engine_addr] == 1 && mode_readys[cur_in_engine_addr] == 1) begin
+            mode_valids <= 0;
+        end
+        if (out_pred_valid_interm == 1 && out_pred_ready_interm == 1) begin
+            out_pred_valid_interm <= 0;
         end
         
         // input data round-robin logic
@@ -225,11 +226,31 @@ always @(posedge clk) begin
             in_valids[cur_in_engine_addr] <= 1;
             in_data_buf_addr <= DECOMPRESS_WORD_SIZE;
             
+            if (cur_in_engine_addr != prev_in_engine_addr) begin
+                in_valids[prev_in_engine_addr] <= 0;
+            end
+            in_last <= 0;
+            
             if (first_word_flag == 1) begin
                 if (in_data[0 +: 8*VALUE_SIZE_BYTES_NO] <= DECOMPRESS_WORD_SIZE/8) begin
                     in_last <= 1;
+                    in_data_buf_addr <= 0;
+                    if (in_readys[cur_in_engine_addr] == 1) begin
+                        in_ready <= 1;
+                        in_pred_ready <= 1;
+                        if (cur_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                            cur_in_engine_addr <= 0;
+                            prev_in_engine_addr <= DECOMPRESS_ENGINES_NO-1;
+                        end else begin
+                            cur_in_engine_addr <= cur_in_engine_addr + 1;
+                            if (prev_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                                prev_in_engine_addr <= 0;
+                            end else begin
+                                prev_in_engine_addr <= prev_in_engine_addr + 1;
+                            end
+                        end
+                    end
                 end else begin
-                    in_last <= 0;
                     first_word_flag <= 0;
                     value_bytes_counter <= in_data[0 +: 8*VALUE_SIZE_BYTES_NO] - DECOMPRESS_WORD_SIZE/8;
                 end
@@ -238,14 +259,28 @@ always @(posedge clk) begin
                     in_last <= 1;
                     first_word_flag <= 1;
                     in_data_buf_addr <= 0;
+                    if (in_readys[cur_in_engine_addr] == 1) begin
+                        in_ready <= 1;
+                        in_pred_ready <= 1;
+                        if (cur_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                            cur_in_engine_addr <= 0;
+                            prev_in_engine_addr <= DECOMPRESS_ENGINES_NO-1;
+                        end else begin
+                            cur_in_engine_addr <= cur_in_engine_addr + 1;
+                            if (prev_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                                prev_in_engine_addr <= 0;
+                            end else begin
+                                prev_in_engine_addr <= prev_in_engine_addr + 1;
+                            end
+                        end
+                    end
                 end else begin
                     in_last <= 0;
-                    first_word_flag <= 0;
                     value_bytes_counter <= value_bytes_counter - DECOMPRESS_WORD_SIZE/8;
                 end
             end
         end else begin
-            if (in_readys[cur_in_engine_addr] == 1) begin
+            if (in_valids[cur_in_engine_addr] == 1 && in_readys[cur_in_engine_addr] == 1) begin
                 if (in_data_buf_addr != 0 && in_last != 1) begin
                     in_data_decompress <= in_data_buf[in_data_buf_addr +: DECOMPRESS_WORD_SIZE];
                     in_valids[cur_in_engine_addr] <= 1;
@@ -259,6 +294,21 @@ always @(posedge clk) begin
                         in_last <= 1;
                         first_word_flag <= 1;
                         in_data_buf_addr <= 0;
+                        if (in_readys[cur_in_engine_addr] == 1) begin
+                            in_ready <= 1;
+                            in_pred_ready <= 1;
+                            if (cur_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                                cur_in_engine_addr <= 0;
+                                prev_in_engine_addr <= DECOMPRESS_ENGINES_NO-1;
+                            end else begin
+                                cur_in_engine_addr <= cur_in_engine_addr + 1;
+                                if (prev_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                                    prev_in_engine_addr <= 0;
+                                end else begin
+                                    prev_in_engine_addr <= prev_in_engine_addr + 1;
+                                end
+                            end
+                        end
                     end else begin
                         in_last <= 0;
                         first_word_flag <= 0;
@@ -272,10 +322,23 @@ always @(posedge clk) begin
                         in_pred_ready <= 1;
                         if (cur_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
                             cur_in_engine_addr <= 0;
+                            prev_in_engine_addr <= DECOMPRESS_ENGINES_NO-1;
                         end else begin
                             cur_in_engine_addr <= cur_in_engine_addr + 1;
+                            if (prev_in_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                                prev_in_engine_addr <= 0;
+                            end else begin
+                                prev_in_engine_addr <= prev_in_engine_addr + 1;
+                            end
                         end
                     end
+                end
+            end else begin
+                if (in_valids[prev_in_engine_addr] == 1 && in_readys[prev_in_engine_addr] == 1) begin
+                    in_ready <= 1;
+                    in_valids <= 0;
+                    in_last <= 0;
+                    in_pred_ready <= 1;
                 end
             end
         end
@@ -283,30 +346,43 @@ always @(posedge clk) begin
         // output round-robin logic
         if (out_valid == 0) begin
             out_readys[cur_out_engine_addr] <= 1;
-            if (out_valids[cur_out_engine_addr] == 1 && out_readys[cur_out_engine_addr] == 1) begin
-                out_data[out_data_addr +: DECOMPRESS_WORD_SIZE] <= out_datas[cur_out_engine_addr];
-                out_data_addr <= out_data_addr + DECOMPRESS_WORD_SIZE;
-                if (out_data_addr == WORD_SIZE-DECOMPRESS_WORD_SIZE || out_lasts[cur_out_engine_addr] == 1) begin
-                    out_valid <= 1;
-                    out_readys <= 0;
-                    out_last <= out_lasts[cur_out_engine_addr];
-                    out_data_addr <= 0;
-                end
-            end
         end else begin
             if (out_ready == 1) begin
                 out_valid <= 0;
                 out_data <= 0;
                 if (out_last == 1) begin
                     out_last <= 0;
-                    if (cur_out_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
-                        cur_out_engine_addr <= 0;
-                    end else begin
-                        cur_out_engine_addr <= cur_out_engine_addr + 1;
+                    if (out_readys == 0) begin
+                        if (cur_out_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                            cur_out_engine_addr <= 0;
+                        end else begin
+                            cur_out_engine_addr <= cur_out_engine_addr + 1;
+                        end
                     end
                 end
-            end else begin
-                out_readys <= 0;
+            end
+        end
+        if (out_valids[cur_out_engine_addr] == 1 && out_readys[cur_out_engine_addr] == 1) begin
+            out_data[out_data_addr +: DECOMPRESS_WORD_SIZE] <= out_datas[cur_out_engine_addr];
+            out_data_addr <= out_data_addr + DECOMPRESS_WORD_SIZE;
+            if (out_data_addr == WORD_SIZE-DECOMPRESS_WORD_SIZE || out_lasts[cur_out_engine_addr] == 1) begin
+                out_valid <= 1;
+                out_last <= out_lasts[cur_out_engine_addr];
+                out_data_addr <= 0;
+                if (out_ready == 1) begin
+                    if (out_lasts[cur_out_engine_addr] == 1) begin
+                        out_readys[cur_out_engine_addr] <= 0;
+                        if (cur_out_engine_addr == DECOMPRESS_ENGINES_NO-1) begin
+                            cur_out_engine_addr <= 0;
+                            out_readys[0] <= 1;
+                        end else begin
+                            cur_out_engine_addr <= cur_out_engine_addr + 1;
+                            out_readys[cur_out_engine_addr + 1] <= 1;
+                        end
+                    end
+                end else begin
+                    out_readys <= 0;
+                end
             end
         end
     end

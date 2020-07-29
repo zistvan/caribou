@@ -117,15 +117,16 @@ func getRot(file string) ([][]float64, []int) {
 
 func main() {
 	var (
-		err         error
-		hostAddress string
-		inFilePath  string
-		keyString   string
-		repeatsNo   int
-		bulkSize    int
-		shouldWrite bool
-		mode        string
-		shouldPrint bool
+		err              error
+		hostAddress      string
+		inFilePath       string
+		keyString        string
+		repeatsNo        int
+		bulkSize         int
+		shouldWrite      bool
+		mode             string
+		shouldPrint      bool
+		shouldDecompress bool
 	)
 
 	flag.StringVar(&hostAddress, "h", "localhost:11211", "The address of the server (host:port).")
@@ -136,6 +137,7 @@ func main() {
 	flag.BoolVar(&shouldWrite, "w", false, "Set true if result files should be written.")
 	flag.StringVar(&mode, "m", "p", "Mode: s = store file; p = perturb in storage; c = perturb on cpu; n = get nonperturbed.")
 	flag.BoolVar(&shouldPrint, "p", true, "Set false in order to not print timing info.")
+	flag.BoolVar(&shouldDecompress, "d", false, "Set if pages should be decompressed in storage.")
 	flag.Parse()
 
 	inFilePathWithoutExtension := inFilePath[:strings.IndexByte(inFilePath, '.')]
@@ -187,7 +189,7 @@ func main() {
 
 		start1 := time.Now()
 		for i := 0; i < repeatsNo; i++ {
-			perturbedData, err = p.GetPerturbedRows(key, bulkSize)
+			perturbedData, err = p.GetPerturbedRows(key, shouldDecompress, bulkSize)
 			if err != nil {
 				log.Fatalf("Error GetPerturbedRows: %s\n", err)
 			}
@@ -212,7 +214,7 @@ func main() {
 
 		start2 := time.Now()
 		for i := 0; i < repeatsNo; i++ {
-			originalData, err := p.GetPerturbedRows(key, bulkSize)
+			originalData, err := p.GetPerturbedRows(key, shouldDecompress, bulkSize)
 			if err != nil {
 				log.Fatalf("Error GetPerturbedRows: %s\n", err)
 			}
@@ -258,7 +260,7 @@ func main() {
 
 		start3 := time.Now()
 		for i := 0; i < repeatsNo; i++ {
-			d, err = p.GetPerturbedRows(key, bulkSize)
+			d, err = p.GetPerturbedRows(key, shouldDecompress, bulkSize)
 			if err != nil {
 				log.Fatalf("Error GetPerturbedRows: %s\n", err)
 			}

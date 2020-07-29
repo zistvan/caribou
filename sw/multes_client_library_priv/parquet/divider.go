@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
 
@@ -14,7 +15,7 @@ import (
 )
 
 // var ok = true
-var col = 0
+// var col = 0
 
 type Divider struct {
 	reader       *ParquetReader.ParquetReader
@@ -102,7 +103,7 @@ func readPageStruct(column *ParquetReader.ColumnBufferType) (*Layout.Page, error
 func (divider *Divider) readPagesFromColumn(column *ParquetReader.ColumnBufferType) error {
 	var err error
 
-	col++
+	//col++
 
 	// // test
 	// fp, err := os.Create("out/page" + strconv.Itoa(divider.pagesRead))
@@ -140,24 +141,13 @@ func (divider *Divider) readPagesFromColumn(column *ParquetReader.ColumnBufferTy
 				// }
 			}
 
-			headerBuff, err := divider.serializer.Write(context.TODO(), page.Header)
-			if err != nil {
-				return err
-			}
+			// headerBuff, err := divider.serializer.Write(context.TODO(), page.Header)
+			// if err != nil {
+			// 	return err
+			// }
 
-			divider.pageValues[divider.pagesRead] = append(divider.pageValues[divider.pagesRead], headerBuff...)
+			// divider.pageValues[divider.pagesRead] = append(divider.pageValues[divider.pagesRead], headerBuff...)
 			divider.pageValues[divider.pagesRead] = append(divider.pageValues[divider.pagesRead], page.RawData...)
-
-			// // test
-			// manyPages := true
-			// if len(headerBuff)+len(page.RawData) == len(divider.pageValues[divider.pagesRead]) {
-			// 	manyPages = false
-			// }
-			// fmt.Printf("Column %d, page %d: headerSize=%d; dataSize=%d; valueSize=%d; pageSize=%d; manyPages=%t\n",
-			// 	col, divider.pagesRead, len(headerBuff), len(page.RawData), len(page.RawData)-7, len(divider.pageValues[divider.pagesRead]), manyPages)
-			// if len(divider.pageValues[divider.pagesRead]) > 2048 {
-			// 	fmt.Printf("\nToo big page!!!\n")
-			// }
 
 			// // test
 			// uncompressed, err := Compress.Uncompress(page.RawData, page.CompressType)
@@ -186,14 +176,14 @@ func (divider *Divider) readPagesFromColumn(column *ParquetReader.ColumnBufferTy
 			// if err != nil {
 			// 	return err
 			// }
-			// _, err = fp.Write(headerBuff)
-			// if err != nil {
-			// 	return err
-			// }
-			// _, err = fp.Write([]byte("+++++++++"))
-			// if err != nil {
-			// 	return err
-			// }
+			// // _, err = fp.Write(headerBuff)
+			// // if err != nil {
+			// // 	return err
+			// // }
+			// // _, err = fp.Write([]byte("+++++++++"))
+			// // if err != nil {
+			// // 	return err
+			// // }
 			// _, err = fp.Write(page.RawData)
 			// if err != nil {
 			// 	return err
@@ -213,6 +203,8 @@ func (divider *Divider) readMetaData(columnChunksValuesNo []int) error {
 	// 	return err
 	// }
 	// defer fp.Close()
+
+	fmt.Printf("%v\n", columnChunksValuesNo)
 
 	footerBuff, err := divider.serializer.Write(context.TODO(), divider.reader.Footer)
 	if err != nil {

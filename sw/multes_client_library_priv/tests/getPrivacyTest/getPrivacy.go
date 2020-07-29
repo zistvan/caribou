@@ -16,12 +16,14 @@ var matrix = []float64{0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.3, 0.3, 0.3}
 
 func main() {
 	var (
-		err         error
-		addr        string
-		inFilePaths = []string{"page0", "page1", "page2"}
+		err              error
+		addr             string
+		shouldDecompress bool
+		inFilePaths      = []string{"page0_d", "page1_d", "page2_d"}
 	)
 
-	flag.StringVar(&addr, "h", "localhost:11211", "The address of the server (host:port)")
+	flag.StringVar(&addr, "h", "localhost:11211", "The address of the server (host:port).")
+	flag.BoolVar(&shouldDecompress, "d", false, "Set if values should be decompressed in storage.")
 	flag.Parse()
 
 	c := ops.NewClient(addr)
@@ -63,7 +65,7 @@ func main() {
 		log.Fatalf("Error GetRotationMatrix: %s\n", err)
 	}
 
-	results, err := c.GetPerturbed([][]byte{[]byte(strconv.Itoa(1)), []byte(strconv.Itoa(2)), []byte(strconv.Itoa(3))})
+	results, err := c.GetPerturbed([][]byte{[]byte(strconv.Itoa(1)), []byte(strconv.Itoa(2)), []byte(strconv.Itoa(3))}, shouldDecompress)
 	if err != nil {
 		log.Fatalf("Error GetPerturbed: %s\n", err)
 	}

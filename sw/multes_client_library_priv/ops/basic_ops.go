@@ -131,7 +131,7 @@ func (c Client) GetWithCheckpoint(key []byte, tokenBucketIdx int, tokensEachTick
 	return gOp.Result, nil
 }
 
-func (c Client) GetPerturbed(key [][]byte) ([][]byte, error) {
+func (c Client) GetPerturbed(key [][]byte, shouldDecompress bool) ([][]byte, error) {
 	if len(key)%perturbedGroupSize != 0 {
 		return nil, fmt.Errorf("Error GetPerturbed: the number of keys should be multiple of perturbedGroupSize.")
 	}
@@ -145,7 +145,12 @@ func (c Client) GetPerturbed(key [][]byte) ([][]byte, error) {
 		initKey := make([]byte, len(key[i])+idxLen)
 		copy(initKey[idxLen:], key[i])
 
-		value := []byte{0xFF}
+		var value []byte
+		if shouldDecompress {
+			value = []byte{0x01, 0xFF}
+		} else {
+			value = []byte{0x00, 0xFF}
+		}
 
 		rqs[i] = internal.NewGetCondOp(initKey, value)
 	}
@@ -167,7 +172,7 @@ func (c Client) GetPerturbed(key [][]byte) ([][]byte, error) {
 	return results, nil
 }
 
-func (c Client) GetBulkN(keys [][]byte, getCondNo int, getNo int, n int) ([][]byte, error) {
+func (c Client) GetBulkN(keys [][]byte, getCondNo int, getNo int, shouldDecompress bool, n int) ([][]byte, error) {
 	if getCondNo%perturbedGroupSize != 0 {
 		return nil, fmt.Errorf("Error GetBulkN: getCondNo should be multiple of perturbedGroupSize.")
 	}
@@ -183,11 +188,21 @@ func (c Client) GetBulkN(keys [][]byte, getCondNo int, getNo int, n int) ([][]by
 	for ; i < getCondNo+getNo; i++ {
 		initKey := make([]byte, len(keys[i])+idxLen)
 		copy(initKey[idxLen:], keys[i])
-		if i < getCondNo {
-			value := []byte{0xFF}
-			rqs[i%n] = internal.NewGetCondOp(initKey, value)
+		if shouldDecompress {
+			if i < getCondNo {
+				value := []byte{0x01, 0xFF}
+				rqs[i%n] = internal.NewGetCondOp(initKey, value)
+			} else {
+				value := []byte{0x01, 0x00}
+				rqs[i%n] = internal.NewGetCondOp(initKey, value)
+			}
 		} else {
-			rqs[i%n] = internal.NewGetOp(initKey)
+			if i < getCondNo {
+				value := []byte{0x00, 0xFF}
+				rqs[i%n] = internal.NewGetCondOp(initKey, value)
+			} else {
+				rqs[i%n] = internal.NewGetOp(initKey)
+			}
 		}
 
 		if (i+1)%n == 0 {
@@ -237,7 +252,7 @@ func (c Client) GetRotationMatrix() error {
 	initKey := make([]byte, len(key)+idxLen)
 	copy(initKey[idxLen:], key)
 
-	value := []byte{0xFE}
+	value := []byte{0x00, 0xFE}
 
 	op := internal.NewGetCondOp(initKey, value)
 

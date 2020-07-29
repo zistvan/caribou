@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 
 	"io"
 	"math"
@@ -162,34 +164,34 @@ func (processor *Processor) GetFile(key []byte, parquetFilePath string) error {
 		return errors.New("No value found at the given key")
 	}
 
-	// // test
-	// err = os.Mkdir("out2", 0777)
+	// test
+	err = os.Mkdir("out2", 0777)
+	if err != nil {
+		return err
+	}
+	for i, v := range pageValues {
+		fp, err := os.Create("out2/page" + strconv.Itoa(i))
+		if err != nil {
+			return err
+		}
+		defer fp.Close()
+		_, err = fp.Write(v)
+		if err != nil {
+			return err
+		}
+	}
+
+	// This no longer works after eliminating the page header -> should build it manually in the future
+	// composer, err := NewComposer(pageValues, parquetFilePath, processor.parquetSchema)
 	// if err != nil {
 	// 	return err
 	// }
-	// for i, v := range pageValues {
-	// 	fp, err := os.Create("out2/page" + strconv.Itoa(i))
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	defer fp.Close()
-	// 	_, err = fp.Write(v)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	fmt.Printf("Page %d len: %d\n", i, len(v))
+	// defer composer.Close()
+
+	// err = composer.ComposeFile()
+	// if err != nil {
+	// 	return err
 	// }
-
-	composer, err := NewComposer(pageValues, parquetFilePath, processor.parquetSchema)
-	if err != nil {
-		return err
-	}
-	defer composer.Close()
-
-	err = composer.ComposeFile()
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -298,7 +300,7 @@ func (processor *Processor) SetRotationMatrix(parquetFilePath string) error {
 	return processor.client.GetRotationMatrix()
 }
 
-func (processor *Processor) GetPerturbedRows(key []byte, n int) ([][]float64, error) {
+func (processor *Processor) GetPerturbedRows(key []byte, shouldDecompress bool, n int) ([][]float64, error) {
 	var err error
 
 	if processor.parquetFileMetaData == nil {
@@ -389,7 +391,7 @@ func (processor *Processor) GetPerturbedRows(key []byte, n int) ([][]float64, er
 		processor.valueNoOffsets[outputColumnsIndices[i]] = 0
 	}
 
-	pages, err := processor.client.GetBulkN(keys, getCondNo, getNo, n)
+	pages, err := processor.client.GetBulkN(keys, getCondNo, getNo, shouldDecompress, n)
 	if err != nil {
 		return nil, err
 	}
