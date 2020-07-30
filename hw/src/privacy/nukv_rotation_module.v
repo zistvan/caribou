@@ -9,39 +9,39 @@ module nukv_Rotation_Module
 	input wire         clk,
 	input wire         rst,
 	
-	(* mark_debug = "true" *)input wire [COL_COUNT*COL_COUNT*COL_WIDTH-1:0] matrix_data,
-    (* mark_debug = "true" *)input wire matrix_valid,
+	input wire [COL_COUNT*COL_COUNT*COL_WIDTH-1:0] matrix_data,
+    input wire matrix_valid,
 
-	(* mark_debug = "true" *)input  wire [MEMORY_WIDTH-1:0] input_data,
-	(* mark_debug = "true" *)input  wire         input_valid,
-	(* mark_debug = "true" *)input  wire			input_last,
-	(* mark_debug = "true" *)output wire         input_ready,
+	input  wire [MEMORY_WIDTH-1:0] input_data,
+	input  wire         input_valid,
+	input  wire			input_last,
+	output wire         input_ready,
 
-	(* mark_debug = "true" *)output wire [MEMORY_WIDTH-1:0] output_data,
-	(* mark_debug = "true" *)output wire         output_valid,
-	(* mark_debug = "true" *)output wire			output_last,
-	(* mark_debug = "true" *)input  wire         output_ready
+	output wire [MEMORY_WIDTH-1:0] output_data,
+	output wire         output_valid,
+	output wire			output_last,
+	input  wire         output_ready
 );
 
 
     reg[2:0] state;
     
-    (* mark_debug = "true" *)wire [8*VALUE_SIZE_BYTES_NO-1:0] ctr_value_size_data;
-    (* mark_debug = "true" *)wire [COL_COUNT*COL_WIDTH-1:0] ctr_data;
-    (* mark_debug = "true" *)wire ctr_valid;
-    (* mark_debug = "true" *)wire ctr_ready;
-    (* mark_debug = "true" *)wire ctr_last;
+    wire [8*VALUE_SIZE_BYTES_NO-1:0] ctr_value_size_data;
+    wire [COL_COUNT*COL_WIDTH-1:0] ctr_data;
+    wire ctr_valid;
+    wire ctr_ready;
+    wire ctr_last;
     
-    (* mark_debug = "true" *)wire[COL_COUNT*COL_WIDTH-1:0] rot_data;
-    (* mark_debug = "true" *)wire rot_valid;
-    (* mark_debug = "true" *)wire rot_ready;
-    (* mark_debug = "true" *)wire rot_last;
+    wire[COL_COUNT*COL_WIDTH-1:0] rot_data;
+    wire rot_valid;
+    wire rot_ready;
+    wire rot_last;
 
-    (* mark_debug = "true" *)wire [8*VALUE_SIZE_BYTES_NO-1:0] rtc_value_size_data;
-    (* mark_debug = "true" *)wire [MEMORY_WIDTH-1:0] rtc_data;
-    (* mark_debug = "true" *)wire rtc_valid;
-    (* mark_debug = "true" *)wire rtc_ready;
-    (* mark_debug = "true" *)wire rtc_last;
+    wire [8*VALUE_SIZE_BYTES_NO-1:0] rtc_value_size_data;
+    wire [MEMORY_WIDTH-1:0] rtc_data;
+    wire rtc_valid;
+    wire rtc_ready;
+    wire rtc_last;
     
     wire mult_valid;
     
