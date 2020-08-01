@@ -30,6 +30,23 @@ module decompress_group_512to64
     (* mark_debug = "true" *)input wire out_pred_ready
 );
 
+(* mark_debug = "true" *)reg [63:0] cnt_valid_deco;
+(* mark_debug = "true" *)reg [63:0] cnt_last_deco;
+
+always @(posedge clk) begin
+    if (rst == 1) begin
+        cnt_valid_deco <= 0;
+        cnt_last_deco <= 0;
+    end else begin
+        if (out_valid == 1 && out_ready == 1) begin
+            cnt_valid_deco <= cnt_valid_deco + 1;
+            if (out_last == 1) begin
+                cnt_last_deco <= cnt_last_deco + 1;
+            end
+        end
+    end
+end
+
 reg [$clog2(DECOMPRESS_ENGINES_NO)-1:0] prev_in_engine_addr;
 reg [$clog2(DECOMPRESS_ENGINES_NO)-1:0] cur_in_engine_addr;
 reg [$clog2(DECOMPRESS_ENGINES_NO)-1:0] cur_out_engine_addr;

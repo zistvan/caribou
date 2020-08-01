@@ -332,10 +332,6 @@ func (processor *Processor) GetPerturbedRows(key []byte, shouldDecompress bool, 
 		}
 	}
 
-	// fmt.Printf("perturbedColumnsIndices = %v\n", perturbedColumnsIndices)
-	// fmt.Printf("outputColumnsIndices = %v\n", outputColumnsIndices)
-	// fmt.Printf("processor.ColumnPermutation = %v\n", processor.ColumnPermutation)
-
 	keys := make([][]byte, 0, processor.columnChunksValuesNo[processor.columnsNo])
 	getCondNo := 0
 	getNo := 0
@@ -438,10 +434,10 @@ func (processor *Processor) GetPerturbedRows(key []byte, shouldDecompress bool, 
 			processor.columnChunksValuesNo[outputColumnsIndices[i]] {
 
 			var k int
-			if pages[pagesIdx][41] == 0x00 && pages[pagesIdx][42] == 0x03 {
-				k = 49
-			} else if pages[pagesIdx][41] == 0x02 && pages[pagesIdx][42] == 0x00 {
-				k = 47
+			if pages[pagesIdx][0] == 0x03 {
+				k = 7
+			} else if pages[pagesIdx][0] == 0x02 {
+				k = 6
 			}
 			for ; k < len(pages[pagesIdx]); k += 8 {
 				bits := binary.LittleEndian.Uint64(pages[pagesIdx][k : k+8])

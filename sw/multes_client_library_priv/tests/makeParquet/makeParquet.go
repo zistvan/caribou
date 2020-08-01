@@ -18,15 +18,22 @@ import (
 
 func main() {
 	var (
-		err        error
-		inFilePath string
+		err            error
+		inFilePath     string
+		shouldCompress bool
 	)
 
 	flag.StringVar(&inFilePath, "f", "bank_labeled.csv", "Path to the .csv input file.")
+	flag.BoolVar(&shouldCompress, "c", false, "Set true if the file should be compressed.")
 	flag.Parse()
 
 	inFilePathWithoutExtension := inFilePath[:strings.IndexByte(inFilePath, '.')]
-	parquetFilePath := fmt.Sprintf("%s.parquet", inFilePathWithoutExtension)
+	var parquetFilePath string
+	if shouldCompress {
+		parquetFilePath = fmt.Sprintf("%s_c.parquet", inFilePathWithoutExtension)
+	} else {
+		parquetFilePath = fmt.Sprintf("%s.parquet", inFilePathWithoutExtension)
+	}
 
 	pfin, err := os.Open(inFilePath)
 	if err != nil {
@@ -56,7 +63,11 @@ func main() {
 		}
 
 		pw.RowGroupSize = 1024 * 1024 * 1024 * 1024
-		pw.CompressionType = pq.CompressionCodec_UNCOMPRESSED
+		if shouldCompress {
+			pw.CompressionType = pq.CompressionCodec_SNAPPY
+		} else {
+			pw.CompressionType = pq.CompressionCodec_UNCOMPRESSED
+		}
 		pw.PageSize = 2000
 
 		for _, csvRowString := range csvDataString[1:] {
@@ -87,7 +98,11 @@ func main() {
 		}
 
 		pw.RowGroupSize = 1024 * 1024 * 1024 * 1024
-		pw.CompressionType = pq.CompressionCodec_UNCOMPRESSED
+		if shouldCompress {
+			pw.CompressionType = pq.CompressionCodec_SNAPPY
+		} else {
+			pw.CompressionType = pq.CompressionCodec_UNCOMPRESSED
+		}
 		pw.PageSize = 2000
 
 		for _, csvRowString := range csvDataString[1:] {
@@ -118,7 +133,11 @@ func main() {
 		}
 
 		pw.RowGroupSize = 1024 * 1024 * 1024 * 1024
-		pw.CompressionType = pq.CompressionCodec_UNCOMPRESSED
+		if shouldCompress {
+			pw.CompressionType = pq.CompressionCodec_SNAPPY
+		} else {
+			pw.CompressionType = pq.CompressionCodec_UNCOMPRESSED
+		}
 		pw.PageSize = 2000
 
 		for _, csvRowString := range csvDataString[1:] {

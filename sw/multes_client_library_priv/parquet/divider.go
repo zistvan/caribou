@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
 
@@ -203,8 +202,6 @@ func (divider *Divider) readMetaData(columnChunksValuesNo []int) error {
 	// 	return err
 	// }
 	// defer fp.Close()
-
-	fmt.Printf("%v\n", columnChunksValuesNo)
 
 	footerBuff, err := divider.serializer.Write(context.TODO(), divider.reader.Footer)
 	if err != nil {

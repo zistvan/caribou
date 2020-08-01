@@ -27,27 +27,28 @@ wire [MEMORY_WIDTH:0] buffer_input_data [COL_COUNT-1:0];
 wire [COL_COUNT-1:0] buffer_input_valid;
 wire [COL_COUNT-1:0] buffer_input_ready;
 
-wire [MEMORY_WIDTH:0] buffer_output_data [COL_COUNT-1:0];
-wire [COL_COUNT-1:0] buffer_output_valid;
-reg [COL_COUNT-1:0] buffer_output_ready;
+(* mark_debug = "true" *)wire [MEMORY_WIDTH:0] buffer_output_data [COL_COUNT-1:0];
+(* mark_debug = "true" *)wire [COL_COUNT-1:0] buffer_output_valid;
+(* mark_debug = "true" *)reg [COL_COUNT-1:0] buffer_output_ready;
 
-reg [MEMORY_WIDTH-1:0] colword_buf [COL_COUNT-1:0];
-reg [COL_COUNT-1:0] colword_last;
-reg [$clog2(MEMORY_WIDTH)-1:0] colword_addr [COL_COUNT-1:0];
+(* mark_debug = "true" *)reg [MEMORY_WIDTH-1:0] colword_buf [COL_COUNT-1:0];
+(* mark_debug = "true" *)reg [COL_COUNT-1:0] colword_last;
+(* mark_debug = "true" *)reg [$clog2(MEMORY_WIDTH)-1:0] colword_addr [COL_COUNT-1:0];
 
-reg [COL_COUNT-1:0] first_word_flag;
+(* mark_debug = "true" *)reg [COL_COUNT-1:0] first_word_flag;
 
-reg [8*VALUE_SIZE_BYTES_NO-1:0] value_bytes_counter [COL_COUNT-1:0];
+(* mark_debug = "true" *)reg [8*VALUE_SIZE_BYTES_NO-1:0] value_bytes_counter [COL_COUNT-1:0];
 
-reg [COL_WIDTH*COL_COUNT-1:0] assembled_data;
-reg [COL_COUNT-1:0] assembled_valid_pre;
-wire assembled_valid;
-wire assembled_last;
-wire assembled_ready;
+(* mark_debug = "true" *)reg [COL_WIDTH*COL_COUNT-1:0] assembled_data;
+(* mark_debug = "true" *)reg [COL_COUNT-1:0] assembled_valid_pre;
+(* mark_debug = "true" *)wire assembled_valid;
+(* mark_debug = "true" *)wire assembled_last;
+(* mark_debug = "true" *)wire assembled_ready;
 
-reg [$clog2(COL_WIDTH/8)-1:0] offset [COL_COUNT-1:0];
+(* mark_debug = "true" *)reg [$clog2(COL_WIDTH/8)-1:0] offset1 [COL_COUNT-1:0];
+(* mark_debug = "true" *)reg [$clog2(COL_WIDTH/8)-1:0] offset2 [COL_COUNT-1:0];
 
-integer idx, byte;
+integer idx, byteIdx;
 
 genvar i;
 generate  
@@ -130,32 +131,34 @@ always @(posedge clk) begin
                     // HACK: there are some unwanted bytes in the beginning of the page
                     if (colword_buf[idx][8*VALUE_SIZE_BYTES_NO +: 8] == 8'h02) begin
                         value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - 6;
-                        colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + 6);
+                        colword_addr[idx] <= VALUE_SIZE_BYTES_NO + 6;
                         first_word_flag[idx] <= 0;
                         if (idx == 0) begin
                             value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - 6;
                         end
-                        offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 6)) % (COL_WIDTH/8);
+                        offset1[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 6)) % (COL_WIDTH/8);
+                        offset2[idx] <= COL_WIDTH/8-(MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 6)) % (COL_WIDTH/8);
                     end else begin
                         if (colword_buf[idx][8*VALUE_SIZE_BYTES_NO +: 8] == 8'h03) begin
                             value_bytes_counter[idx] <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - VALUE_SIZE_BYTES_NO - 7;
-                            colword_addr[idx] <= 8 * (VALUE_SIZE_BYTES_NO + 7);
+                            colword_addr[idx] <= VALUE_SIZE_BYTES_NO + 7;
                             first_word_flag[idx] <= 0;
                             if (idx == 0) begin
                                 value_size_data <= colword_buf[idx][0 +: 8*VALUE_SIZE_BYTES_NO] - 7;
                             end
-                            offset[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 7)) % (COL_WIDTH/8);
+                            offset1[idx] <= (MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 7)) % (COL_WIDTH/8);
+                            offset2[idx] <= COL_WIDTH/8-(MEMORY_WIDTH/8-(VALUE_SIZE_BYTES_NO + 7)) % (COL_WIDTH/8);
                         end
                     end
                 end else begin
                     if (colword_addr[idx] == 0) begin
-                        for (byte = 0; byte < (COL_WIDTH/8-offset[idx]); byte = byte + 1) begin
-                            assembled_data[idx * COL_WIDTH + offset[idx]*8 + byte*8 +: 8] <= colword_buf[idx][colword_addr[idx] + byte*8 +: 8];
+                        for (byteIdx = 0; byteIdx < offset2[idx]; byteIdx = byteIdx + 1) begin
+                            assembled_data[idx * COL_WIDTH + offset1[idx]*8 + byteIdx*8 +: 8] <= colword_buf[idx][colword_addr[idx]*8 + byteIdx*8 +: 8];
                         end
                         assembled_valid_pre[idx] <= 1;
-                        colword_addr[idx] <= colword_addr[idx] + (COL_WIDTH-offset[idx]*8);
+                        colword_addr[idx] <= colword_addr[idx] + offset2[idx];
                         value_bytes_counter[idx] <= value_bytes_counter[idx] - COL_WIDTH / 8;
-                        if (colword_addr[idx] + (COL_WIDTH-offset[idx]*8) >= MEMORY_WIDTH) begin
+                        if (colword_addr[idx] + offset2[idx] >= MEMORY_WIDTH/8) begin
                             colword_addr[idx] <= 0;
                             buffer_output_ready[idx] <= 1;
                         end
@@ -165,14 +168,14 @@ always @(posedge clk) begin
                             first_word_flag[idx] <= 1;
                         end
                     end else begin
-                        if (colword_addr[idx] <= MEMORY_WIDTH - COL_WIDTH) begin
-                            for (byte = 0; byte < COL_WIDTH/8; byte = byte + 1) begin
-                                assembled_data[idx * COL_WIDTH + byte*8 +: 8] <= colword_buf[idx][colword_addr[idx] + byte*8 +: 8];
+                        if (colword_addr[idx] <= MEMORY_WIDTH/8 - COL_WIDTH/8) begin
+                            for (byteIdx = 0; byteIdx < COL_WIDTH/8; byteIdx = byteIdx + 1) begin
+                                assembled_data[idx * COL_WIDTH + byteIdx*8 +: 8] <= colword_buf[idx][colword_addr[idx]*8 + byteIdx*8 +: 8];
                             end
                             assembled_valid_pre[idx] <= 1;
-                            colword_addr[idx] <= colword_addr[idx] + COL_WIDTH;
+                            colword_addr[idx] <= colword_addr[idx] + COL_WIDTH/8;
                             value_bytes_counter[idx] <= value_bytes_counter[idx] - COL_WIDTH / 8;
-                            if (colword_addr[idx] + COL_WIDTH == MEMORY_WIDTH) begin
+                            if (colword_addr[idx] + COL_WIDTH/8 == MEMORY_WIDTH/8) begin
                                 colword_addr[idx] <= 0;
                                 buffer_output_ready[idx] <= 1;
                             end
@@ -182,12 +185,12 @@ always @(posedge clk) begin
                                 first_word_flag[idx] <= 1;
                             end
                         end else begin
-                            if (colword_addr[idx] >= MEMORY_WIDTH) begin
+                            if (colword_addr[idx] >= MEMORY_WIDTH/8) begin
                                 colword_addr[idx] <= 0;
                                 buffer_output_ready[idx] <= 1;
                             end else begin
-                                for (byte = 0; byte < offset[idx]; byte = byte + 1) begin
-                                    assembled_data[idx * COL_WIDTH + byte*8 +: 8] <= colword_buf[idx][colword_addr[idx] + byte*8 +: 8];
+                                for (byteIdx = 0; byteIdx < offset1[idx]; byteIdx = byteIdx + 1) begin
+                                    assembled_data[idx * COL_WIDTH + byteIdx*8 +: 8] <= colword_buf[idx][colword_addr[idx]*8 + byteIdx*8 +: 8];
                                 end
                                 colword_addr[idx] <= 0;
                                 buffer_output_ready[idx] <= 1;
