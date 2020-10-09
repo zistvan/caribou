@@ -1,4 +1,10 @@
-# Multes
+# Caribou with Privacy-preserving perturbation
+
+This project is a prototype implementation of a KVS that offers privacy-preserving perturbations (in this instance 3D rotation-based perturbations).
+The hardware modules are to be found in /hw/src/privacy/ and the software in /sw/multes_client_library_priv/.
+Please note that the project contains several top levels (for legacy reasons, inherited from previous branches), for the privacy-enabled version see /hw/src/muu/muu_top_module_lmem_privacy.v
+
+# Built on Multes/Caribou
 
 Multes [1] is the multi-tenant incarnation of Caribou [2]. It implements **smart distributed storage** built with FPGAs that can efficiently be shared by a large number of tenants. Each node stores key-value pairs in main memory and exposes a simple interface over TCP/IP [3] that software clients can connect to. 
 
