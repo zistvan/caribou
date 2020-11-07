@@ -22,7 +22,7 @@ use IEEE.std_logic_unsigned.all;
 
 entity muu_replicate_LogManager is
   generic (
-    LOC_ADDR_WIDTH : integer := 10;
+    LOC_ADDR_WIDTH : integer := 7;
     USER_BITS : integer := 3
   );
   port (
@@ -51,6 +51,8 @@ architecture beh of muu_replicate_LogManager is
   signal LogKeys : DataArray;
   signal logSizes : DataArray;  
   signal logHeadLocation : std_logic_vector(63 downto 0);
+  signal lookupOn : std_logic;
+  signal lookupAddr : std_logic_vector(USER_BITS+LOC_ADDR_WIDTH-1 downto 0);
   
 begin
 
@@ -61,6 +63,7 @@ begin
 	logHeadLocation <= (others => '0');
 
 	log_found_valid <= '0';
+	lookupOn <= '0';
       else
 
 	log_found_valid <= '0';
@@ -71,8 +74,14 @@ begin
 	end if;
 
 	if (log_search_valid='1') then	  
+	  lookupOn <= '1';
+	  lookupAddr <= log_search_user & log_search_zxid(LOC_ADDR_WIDTH-1 downto 0);
+	end if;
+	
+	if (lookupOn='1') then 
+	  lookupOn <= '0';
 	  log_found_valid <= '1';
-	  log_found_key <= LogKeys(conv_integer(log_search_user & log_search_zxid(LOC_ADDR_WIDTH-1 downto 0)));
+	  log_found_key <= LogKeys(conv_integer(lookupAddr));
 
 	end if;
 

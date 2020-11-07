@@ -176,28 +176,32 @@ architecture beh of muu_replicate_CentralSM is
 
 	type Array32 is array (MAX_PEERS downto 0) of std_logic_vector(31 downto 0);
 	type Array48 is array (MAX_PEERS downto 0) of std_logic_vector(47 downto 0);
-	type Array16 is array (MAX_PEERS downto 0) of std_logic_vector(15 downto 0);
+	type Array16 is array (MAX_PEERS downto 0) of std_logic_vector(15 downto 0);	
 
 	type RoleType is (ROLE_LEADER, ROLE_FOLLOWER, ROLE_UNKNOWN);
 	type PhaseType is (PH_ELECTION, PH_SYNC, PH_NORMAL, PH_STARTUP);
 	type StateType is (ST_WAITOP, ST_HANDLEOP, ST_OPENTCPCONN, ST_SENDTOALL, ST_FINISH_WRITEREQ,
-		               ST_CHKQRM_ACKS, ST_FINISH_COMMIT, ST_FINISH_COMMIT_LATE, ST_FINISH_COMMIT_DATAFORAPP,
+		               ST_CHKQRM_ACKS, ST_CHKQRM_ACKS_2, ST_FINISH_COMMIT, ST_FINISH_COMMIT_LATE, ST_FINISH_COMMIT_DATAFORAPP,
 		               ST_WAIT_MEMWRITE, ST_REQUESTSYNC, ST_SENDSYNC, ST_GETLOGSYNC, ST_DRAMSYNC,
-		               ST_PROP_LEADER, ST_CHKQRM_PROPS, ST_SENDNEWEPOCH, ST_SENDNEWEPOCH_JOIN, ST_SYNC_ELECTION, ST_SAYWHOISLEADER, ST_WAITOUTREADY, ST_INITIALIZE_STRUCTS);
+		               ST_PROP_LEADER, ST_CHKQRM_PROPS, ST_SENDNEWEPOCH, ST_SENDNEWEPOCH_JOIN, ST_SYNC_ELECTION, 
+		               ST_SAYWHOISLEADER, ST_WAITOUTREADY, ST_INITIALIZE_STRUCTS, ST_TIMEOUT_LEADER);
 
-	type ArrayRoleType is array (2 ** USER_BITS - 1 downto 0) of RoleType;
-	type ArrayPhaseType is array (2 ** USER_BITS - 1 downto 0) of PhaseType;
-	type ArrayStateType is array (2 ** USER_BITS - 1 downto 0) of StateType;
+	type ArrayRoleType is array (2**USER_BITS -1  downto 0) of RoleType;
+	type ArrayPhaseType is array (2**USER_BITS -1 downto 0) of PhaseType;
+	type ArrayStateType is array (2**USER_BITS -1 downto 0) of StateType;
 
 	signal prevRole : ArrayRoleType;
 	signal myRole   : ArrayRoleType;
+	signal preloadMyRole   : RoleType;
 	signal myPhase  : ArrayPhaseType;
+	signal preloadMyPhase : PhaseType;
 	signal myState  : StateType;
 
 	--type UaArray16Large is array(2**USER_BITS-1 downto 0) of Array16Large;
 	type UaArray32 is array (2 ** USER_BITS - 1 downto 0) of Array32;
 	type UaArray48 is array (2 ** USER_BITS - 1 downto 0) of Array48;
 	type UaArray16 is array (2 ** USER_BITS - 1 downto 0) of Array16;
+	type UaArrayBool is array (2 ** USER_BITS - 1 downto 0) of std_logic_vector(MAX_PEERS downto 0);
 
 	type BlArray32 is array (((2 ** USER_BITS) * 2 ** PEER_BITS) - 1 downto 0) of std_logic_vector(31 downto 0);
 
@@ -209,13 +213,17 @@ architecture beh of muu_replicate_CentralSM is
 	type UaEpoch is array (2 ** USER_BITS - 1 downto 0) of std_logic_vector(CMD_EPOCH_LEN - 1 downto 0);
 
 	signal myZxid       : UaZxid;
+	signal preloadMyZxid : std_logic_vector(CMD_ZXID_LEN-1 downto 0);
 	signal proposedZxid : Ua32;
 	signal myEpoch      : UaEpoch;
+	signal preloadMyEpoch : std_logic_Vector(CMD_EPOCH_LEN-1 downto 0);
 	signal myIPAddr     : Ua32;
 
-	type UaPeerId is array (2 ** USER_BITS - 1 downto 0) of std_logic_vector(CMD_PEERID_LEN - 1 downto 0);
+	type UaPeerId is array (2 ** USER_BITS - 1 downto 0) of std_logic_vector(PEER_BITS-1 downto 0);
 
-	signal myPeerId             : UaPeerId;
+	signal myPeerId             : UaPeerId;	
+	signal preloadMyPeerId 	    : std_logic_vector(PEER_BITS-1  downto 0);
+
 	signal leaderPeerId         : UaPeerId;
 	signal nextLeaderId         : UaPeerId;
 	signal sinceHeardFromLeader : Ua32;
@@ -226,20 +234,31 @@ architecture beh of muu_replicate_CentralSM is
 
 	signal voteCount  : Ua4;
 	signal votedEpoch : UaEpoch;
+	signal preloadVotedEpoch : std_logic_vector(CMD_EPOCH_LEN-1 downto 0);
 	signal votedZxid  : Ua32;
+	signal preloadVotedZxid : std_logic_vector(CMD_ZXID_LEN-1 downto 0);
 	signal syncFrom   : UaPeerId;
 
-	type Ua8 is array (2 ** USER_BITS - 1 downto 0) of std_logic_vector(7 downto 0);
+	type UaPeerCount is array (2 ** USER_BITS - 1 downto 0) of std_logic_vector(PEER_BITS-1 downto 0);
 
-	signal peerCount   : Ua8;
+	
 	signal peerIP      : UaArray48;
-	signal currPeerIP  : Array48;
+	signal peerIPNonZero  : UaArrayBool;
+	signal preloadPeerIPNZ : std_logic_vector(MAX_PEERS downto 0);
+	--signal currPeerIP  : Array48;
 	signal peerSessId  : UaArray16;
 	signal peerZxidAck : BlArray32;
 	signal peerZxidCmt : BlArray32;
 	signal peerEpoch   : UaArray32;
 
-	signal peerCountForCommit : Ua8;
+	signal preloadPeerZxidAck : std_logic_vector(31 downto 0);
+	signal preloadPeerZxidCmt : std_logic_vector(31 downto 0);
+
+	signal peerCount   : UaPeerCount;
+	signal peerCountForCommit : UaPeerCount;
+
+	signal preloadPeerCount : std_logic_vector(PEER_BITS-1 downto 0);
+	signal preloadPeerCountForCommit : std_logic_vector(PEER_BITS-1 downto 0);
 
 	signal thisPeersAckedZxid : std_logic_vector(CMD_ZXID_LEN - 1 downto 0);
 	signal thisPeersCmtdZxid  : std_logic_vector(CMD_ZXID_LEN - 1 downto 0);
@@ -253,6 +272,7 @@ architecture beh of muu_replicate_CentralSM is
 	signal inCmdPayloadSize : std_logic_vector(CMD_PAYLSIZE_LEN - 1 downto 0);
 	signal inCmdKey         : std_logic_vector(63 downto 0);
 	signal inCmdUser        : std_logic_vector(USER_BITS - 1 downto 0);
+	signal inCmdUserReg     : std_logic_vector(USER_BITS - 1 downto 0);
 	signal inCmdAllData     : std_logic_vector(CMD_WIDTH - 1 downto 0);
 
 	signal inCmdOpCode_I      : std_logic_vector(CMD_TYPE_LEN - 1 downto 0);
@@ -265,6 +285,8 @@ architecture beh of muu_replicate_CentralSM is
 	signal inCmdUser_I        : std_logic_vector(USER_BITS - 1 downto 0);
 
 	signal syncZxid        : UaZxid;
+
+	signal preloadSyncZxid : std_logic_vector(CMD_ZXID_LEN - 1 downto 0);
 	signal syncMode        : std_logic;
 	signal syncPrepare     : std_logic;
 	signal syncDramAddress : std_logic_vector(31 downto 0);
@@ -280,14 +302,15 @@ architecture beh of muu_replicate_CentralSM is
 	signal sendPayloadSize : std_logic_vector(15 downto 0);
 	signal sendZxid        : std_logic_vector(CMD_ZXID_LEN - 1 downto 0);
 	signal sendEpoch       : std_logic_vector(CMD_EPOCH_LEN - 1 downto 0);
-	signal sendCount       : std_logic_vector(7 downto 0);
+	signal sendCount       : std_logic_vector(PEER_BITS-1 downto 0);
 	signal sendEnableMask  : std_logic_vector(MAX_PEERS downto 0);
 
-	signal loopIteration   : std_logic_vector(7 downto 0);
-	signal quorumIteration : std_logic_vector(7 downto 0);
+	signal loopIteration   : std_logic_vector(PEER_BITS-1 downto 0);
+	signal quorumIteration : std_logic_vector(PEER_BITS-1 downto 0);
+	signal quorumIterationMinus1 : std_logic_vector(PEER_BITS-1 downto 0);
 
-	signal commitableCount         : std_logic_vector(7 downto 0);
-	signal commitableCountTimesTwo : std_logic_vector(7 downto 0);
+	signal commitableCount         : std_logic_vector(PEER_BITS-1 downto 0);
+	signal commitableCountTimesTwo : std_logic_vector(PEER_BITS downto 0);
 
 	signal cmdForParallelData  : std_logic_vector(127 downto 0);
 	signal cmdForParallelValid : std_logic;
@@ -317,11 +340,13 @@ architecture beh of muu_replicate_CentralSM is
 
 	signal traceLoc : std_logic_vector(7 downto 0);
 
-	signal syncPeerId : std_logic_vector(7 downto 0);
+	signal syncPeerId : std_logic_vector(PEER_BITS-1 downto 0);
 
 	signal isDead : std_logic;
 
 	signal rst_regd : std_logic;
+
+	signal flagLate : std_logic;
 
 	signal init_user_cnt : std_logic_vector(USER_BITS - 1 downto 0);
 	signal init_peer_cnt : std_logic_vector(PEER_BITS - 1 downto 0);
@@ -353,17 +378,18 @@ begin
 
 	inCmdPayloadSizeP1 <= (inCmdPayloadSize(15 downto 0) + 7);
 
-	commitableCountTimesTwo <= commitableCount(6 downto 0) & "0";
+	commitableCountTimesTwo <= commitableCount(PEER_BITS-1 downto 0) & "0";
 
 	sync_dram     <= syncMode;
 	sync_getready <= syncPrepare;
 
 	dead_mode <= isDead;
 
-  thisPeersAckedZxid <= peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0)));
-  thisPeersCmtdZxid  <= peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0)));
-
+ 
 	main : process(clk)
+	
+	variable quorumIterationVar : std_logic_vector(PEER_BITS-1 downto 0);
+	
 	begin
 		if (clk'event and clk = '1') then
 			rst_regd <= rst;
@@ -499,6 +525,7 @@ begin
 						end if;
 
 						peerIP(conv_integer(init_user_cnt))(conv_integer(init_peer_cnt))     <= (others => '0');
+						peerIPNonZero(conv_integer(init_user_cnt))(conv_integer(init_peer_cnt))     <= '0';
 						peerSessId(conv_integer(init_user_cnt))(conv_integer(init_peer_cnt)) <= (others => '0');
 						--peerZxidAck(conv_integer(init_user_cnt&init_peer_cnt)) <= (others => '0');
 						--peerZxidCmt(conv_integer(init_user_cnt&init_peer_cnt)) <= (others => '0');
@@ -521,6 +548,8 @@ begin
 							inCmdKey         <= cmd_in_key;
 							inCmdUser        <= cmd_in_user;
 							inCmdAllData     <= cmd_in_data;
+
+							preloadMyPeerId    <= myPeerId(conv_integer(cmd_in_user));
 
 							--for PEER in MAX_PEERS downto 0 loop
 							--  currPeerIP(PEER) <= peerIP(conv_integer(inCmdUser_I))(PEER);
@@ -560,6 +589,7 @@ begin
 
 									if ((myPhase(conv_integer(inCmdUser_I)) = PH_STARTUP or myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) and inCmdPeerId_I /= myPeerId(conv_integer(inCmdUser_I)) and (inCmdEpoch_I /= 0 or inCmdZxid_I /= 0)) then
 										myState    <= ST_HANDLEOP;
+										preloadPeerCount <= peerCount(conv_integer(inCmdUser_I));
 										inCmdReady <= '0';
 									else
 										error_valid  <= '1';
@@ -574,7 +604,7 @@ begin
 								when (OPCODE_SETCOMMITCNT) =>
 									traceLoc <= "00000101";
 									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) then
-										peerCountForCommit(conv_integer(inCmdUser_I)) <= inCmdEpoch_I(7 downto 0);
+										peerCountForCommit(conv_integer(inCmdUser_I)) <= inCmdEpoch_I(PEER_BITS-1 downto 0);
 
 									else
 										error_valid  <= '1';
@@ -637,11 +667,19 @@ begin
 
 								when (OPCODE_ACKPROPOSE) =>
 									traceLoc <= "00001000";
+
+									thisPeersAckedZxid <= peerZxidAck(conv_integer(inCmdUser_I(USER_BITS - 1 downto 0) & inCmdPeerId_I(PEER_BITS - 1 downto 0)));
+  									thisPeersCmtdZxid  <= peerZxidCmt(conv_integer(inCmdUser_I(USER_BITS - 1 downto 0) & inCmdPeerId_I(PEER_BITS - 1 downto 0)));
+
 									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and proposedZxid(conv_integer(inCmdUser_I)) >= inCmdZxid_I) then										
-
-										myState    <= ST_HANDLEOP;
-										inCmdReady <= '0';
-
+										
+										if (peerZxidAck(conv_integer(inCmdUser_I(USER_BITS - 1 downto 0) & inCmdPeerId_I(PEER_BITS - 1 downto 0))) + 1 = inCmdZxid_I) then
+											myState    <= ST_HANDLEOP;
+											inCmdReady <= '0';
+										else
+											error_valid  <= '1';
+											error_opcode <= "1000" & inCmdOpCode(3 downto 0);
+										end if;
 									else
 										error_valid  <= '1';
 										error_opcode <= proposedZxid(conv_integer(inCmdUser_I))(7 downto 0); -- & inCmdOpCode(3 downto 0);
@@ -651,24 +689,8 @@ begin
 								when (OPCODE_SYNCREQ) =>
 									traceLoc <= "00001001";
 									if ((myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and proposedZxid(conv_integer(inCmdUser_I)) >= inCmdZxid_I) or (myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER)) then
-										syncZxid(conv_integer(inCmdUser_I)) <= inCmdZxid_I;
-
-										if (myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER) then
-											proposedZxid(conv_integer(inCmdUser_I)) <= myZxid(conv_integer(inCmdUser_I));
-										end if;
-
-										if (proposedZxid(conv_integer(inCmdUser_I)) - inCmdZxid_I < 128) then
-											myState    <= ST_GETLOGSYNC;
-											inCmdReady <= '0';
-										else
-											myState <= ST_WAITOP; --ST_DRAMSYNC;
-											if (syncPrepare = '0') then
-												syncModeWaited <= (others => '0');
-												syncPeerId     <= inCmdPeerID_I;
-											end if;
-											syncPrepare <= '1';
-										--	inCmdReady <= '1';
-										end if;
+										myState <= ST_HANDLEOP;
+										inCmdReady <= '0';
 
 									else
 										error_valid  <= '1';
@@ -678,21 +700,14 @@ begin
 
 								when (OPCODE_PROPOSAL) =>
 									traceLoc <= "00001010";
+
+									preloadMyZxid <= myZxid(conv_integer(inCmdUser_I));
+									preloadMyEpoch <= myEpoch(conv_integer(inCmdUser_I));
+
 									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
 
-										--sinceHeardFromLeader <= (others => '0');
-
-										if (inCmdZxid_I = myZxid(conv_integer(inCmdUser_I)) + 1 and inCmdEpoch_I = myEpoch(conv_integer(inCmdUser_I))) then
-											myState    <= ST_HANDLEOP;
-											inCmdReady <= '0';
-
-										else
-											--myState <= ST_REQUESTSYNC;
-											myState      <= ST_HANDLEOP;
-											inCmdReady   <= '0';
-											error_valid  <= '1';
-											error_opcode <= "1010" & inCmdOpCode_I(3 downto 0);
-										end if;
+										myState <= ST_HANDLEOP;
+										inCmdReady <= '0';
 
 									else
 										error_valid  <= '1';
@@ -739,123 +754,35 @@ begin
 
 								when (OPCODE_CUREPOCH) =>
 									traceLoc <= "00001101";
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION) then
-										nextLeaderId(conv_integer(inCmdUser_I)) <= myPeerId(conv_integer(inCmdUser_I));
-										myPhase(conv_integer(inCmdUser_I))      <= PH_ELECTION;
-										prevRole(conv_integer(inCmdUser_I))     <= myRole(conv_integer(inCmdUser_I));
 
-										peerEpoch(conv_integer(inCmdUser_I))(conv_integer(inCmdPeerId_I))(15 downto 0) <= inCmdEpoch_I;
+									preloadMyPeerId <= myPeerId(conv_integer(inCmdUser_I));
+									preloadPeerCount <= peerCount(conv_integer(inCmdUser_I));
 
-										voteCount(conv_integer(inCmdUser_I)) <= voteCount(conv_integer(inCmdUser_I)) + 1;
+									preloadMyPhase <= myPhase(conv_integer(inCmdUser_I));
+									preloadMyRole <= myRole(conv_integer(inCmdUser_I));
 
-										if (inCmdEpoch_I > votedEpoch(conv_integer(inCmdUser_I))) then
-											votedEpoch(conv_integer(inCmdUser_I)) <= inCmdEpoch_I;
-											votedZxid(conv_integer(inCmdUser_I))  <= inCmdZxid_I;
-											syncFrom(conv_integer(inCmdUser_I))   <= inCmdPeerId_I;
-										end if;
+									myState    <= ST_HANDLEOP;
+									inCmdReady <= '0';
 
-										if (voteCount(conv_integer(inCmdUser_I)) + 1 >= peerCount(conv_integer(inCmdUser_I))(7 downto 1)) then
-											inCmdReady <= '0';
-											myState    <= ST_SENDNEWEPOCH;
-										end if;
 
-									end if;
 
-									--if (myPhase=PH_NORMAL and myRole=ROLE_FOLLOWER) then
-									--  inCmdReady <= '0';
-									--  myState <= ST_SAYWHOISLEADER;
-									--end if;
-
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and myEpoch(conv_integer(inCmdUser_I)) >= inCmdEpoch_I) then
-										inCmdReady <= '0';
-										myState    <= ST_SENDNEWEPOCH_JOIN;
-
-									end if;
-
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and ((myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and myEpoch(conv_integer(inCmdUser_I)) < inCmdEpoch_I) or (myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER))) then
-										nextLeaderId(conv_integer(inCmdUser_I)) <= myPeerId(conv_integer(inCmdUser_I));
-										myPhase(conv_integer(inCmdUser_I))      <= PH_ELECTION;
-										prevRole(conv_integer(inCmdUser_I))     <= myRole(conv_integer(inCmdUser_I));
-
-										peerEpoch(conv_integer(inCmdUser_I))(conv_integer(inCmdPeerId_I))(15 downto 0) <= inCmdEpoch_I;
-
-										voteCount(conv_integer(inCmdUser_I)) <= "0001";
-
-										if (myEpoch(conv_integer(inCmdUser_I)) < inCmdEpoch_I) then
-											votedEpoch(conv_integer(inCmdUser_I)) <= inCmdEpoch_I;
-											votedZxid(conv_integer(inCmdUser_I))  <= inCmdZxid_I;
-											syncFrom(conv_integer(inCmdUser_I))   <= inCmdPeerId_I;
-										else
-											votedEpoch(conv_integer(inCmdUser_I)) <= myEpoch(conv_integer(inCmdUser_I));
-											votedZxid(conv_integer(inCmdUser_I))  <= myZxid(conv_integer(inCmdUser_I));
-											syncFrom(conv_integer(inCmdUser_I))   <= myPeerId(conv_integer(inCmdUser_I));
-										end if;
-
-										if (2 >= peerCount(conv_integer(inCmdUser_I))(7 downto 1)) then
-											inCmdReady <= '0';
-											myState    <= ST_SENDNEWEPOCH;
-										end if;
-									end if;
 
 								when (OPCODE_NEWEPOCH) =>
 									traceLoc <= "00001110";
-									if (inCmdPeerId_I = leaderPeerId(conv_integer(inCmdUser_I))) then
-										sinceHeardFromLeader(conv_integer(inCmdUser_I)) <= (others => '0');
-									end if;
 
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION and inCmdPeerId_I = nextLeaderId(conv_integer(inCmdUser_I))) then
-										myEpoch(conv_integer(inCmdUser_I))         <= inCmdEpoch_I;
-										myZxid(conv_integer(inCmdUser_I))          <= inCmdZxid_I;
-										leaderPeerId(conv_integer(inCmdUser_I))    <= inCmdPeerId_I;
-										myPhase(conv_integer(inCmdUser_I))         <= PH_NORMAL;
-										prevRole(conv_integer(inCmdUser_I))        <= myRole(conv_integer(inCmdUser_I));
-										myRole(conv_integer(inCmdUser_I))          <= ROLE_FOLLOWER;
-										silenceMeasured(conv_integer(inCmdUser_I)) <= '0';
+									preloadMyPeerId <= myPeerId(conv_integer(inCmdUser_I));
+									preloadPeerCount <= peerCount(conv_integer(inCmdUser_I));
 
-										cmd_out_valid                                                                 <= '1';
-										cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
-										cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_ACKEPOCH, 8));
-										cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= inCmdEpoch_I;
-										cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= inCmdZxid_I;
-										cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser_I));
-										cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser_I))(conv_integer(inCmdPeerId_I));
-										cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
-										cmd_out_key                                                                   <= inCmdKey_I;
-                    cmd_out_user                                                                  <= inCmdUser_I;
+									myState <= ST_HANDLEOP;
+									inCmdReady <= '0';
 
-									end if;
-
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and inCmdPeerId_I > myPeerId(conv_integer(inCmdUser_I))) then
-										if (inCmdPeerId_I < peerCount(conv_integer(inCmdUser_I))) then
-											nextLeaderId(conv_integer(inCmdUser_I)) <= inCmdPeerId_I + 1;
-										else
-											nextLeaderId(conv_integer(inCmdUser_I))    <= (others => '0');
-											nextLeaderId(conv_integer(inCmdUser_I))(0) <= '1';
-										end if;
-										leaderPeerId(conv_integer(inCmdUser_I)) <= inCmdPeerId_I;
-										prevRole(conv_integer(inCmdUser_I))     <= myRole(conv_integer(inCmdUser_I));
-										myRole(conv_integer(inCmdUser_I))       <= ROLE_FOLLOWER;
-										myEpoch(conv_integer(inCmdUser_I))      <= inCmdEpoch_I;
-										myZxid(conv_integer(inCmdUser_I))       <= inCmdZxid_I;
-
-										cmd_out_valid                                                                 <= '1';
-										cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
-										cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_ACKEPOCH, 8));
-										cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= inCmdEpoch_I;
-										cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= inCmdZxid_I;
-										cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser_I));
-										cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser_I))(conv_integer(inCmdPeerId_I));
-										cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
-										cmd_out_key                                                                   <= inCmdKey_I;
-                    cmd_out_user                                                                  <= inCmdUser_I;
-
-									--myPhase <= PH_ELECTION;
-									--myRole <= ROLE_FOLLOWER;
-									end if;
 
 								when (OPCODE_ACKEPOCH) =>
 									traceLoc           <= "00001111";
 									--thisPeersAckedZxid <= peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0)));
+									preloadVotedZxid   <= votedZxid(conv_integer(inCmdUser_I));
+									preloadVotedEpoch  <= votedEpoch(conv_integer(inCmdUser_I));
+									preloadMyZxid      <= myZxid(conv_integer(inCmdUser_I));
 									myState            <= ST_HANDLEOP;
 									inCmdReady         <= '0';
 
@@ -865,13 +792,8 @@ begin
 										myState    <= ST_HANDLEOP;
 										inCmdReady <= '0';
 
-										if (inCmdZxid_I = votedZxid(conv_integer(inCmdUser_I))) then
-											myZxid(conv_integer(inCmdUser_I))          <= votedZxid(conv_integer(inCmdUser_I));
-											proposedZxid(conv_integer(inCmdUser_I))    <= votedZxid(conv_integer(inCmdUser_I));
-											myPhase(conv_integer(inCmdUser_I))         <= PH_NORMAL;
-											proposedZxid(conv_integer(inCmdUser_I))    <= votedZxid(conv_integer(inCmdUser_I));
-											silenceMeasured(conv_integer(inCmdUser_I)) <= '0';
-										end if;
+										preloadVotedZxid <= votedZxid(conv_integer(inCmdUser_I));										
+										preloadVotedEpoch  <= votedEpoch(conv_integer(inCmdUser_I));
 
 									else
 										error_valid  <= '1';
@@ -894,9 +816,9 @@ begin
 								when others =>
 									error_opcode <= inCmdOpCode_I;
 
-                  if (inCmdOpCode_I /= OPCODE_READREQ and inCmdOpCode_I /= OPCODE_FLUSHDATASTORE and inCmdOpCode_I/=OPCODE_READCONDITIONAL) then
-									 error_valid  <= '1';
-                  end if;
+					                if (inCmdOpCode_I /= OPCODE_READREQ and inCmdOpCode_I /= OPCODE_FLUSHDATASTORE and inCmdOpCode_I/=OPCODE_READCONDITIONAL) then
+									  error_valid  <= '1';
+					                end if;
 
 									if (cmd_in_valid = '1' and inCmdReady = '1') then
 										cmd_out_data  <= cmd_in_data;
@@ -923,46 +845,8 @@ begin
 							if ((myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL or myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION) and sinceHeardFromLeader(conv_integer(inCmdUser_I)) > silenceThreshold(conv_integer(inCmdUser_I)) and silenceMeasured(conv_integer(inCmdUser_I)) = '1') then
 								-- we need to send the next epoch to the prospective leader -- the next in the order.
 
-								if (myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION and sinceHeardFromLeader(conv_integer(inCmdUser_I)) < 2 ** 30) then
-									traceLoc <= "00010001";
-									-- this was a failed election round...
-
-									if (nextLeaderId(conv_integer(inCmdUser_I)) = peercount(conv_integer(inCmdUser_I)) + 1) then
-										nextLeaderId(conv_integer(inCmdUser_I))    <= (others => '0');
-										nextLeaderId(conv_integer(inCmdUser_I))(0) <= '1';
-									else
-										nextLeaderId(conv_integer(inCmdUser_I)) <= nextLeaderId(conv_integer(inCmdUser_I)) + 1;
-									end if;
-
-									sinceHeardFromLeader(conv_integer(inCmdUser_I))     <= (others => '0');
-									sinceHeardFromLeader(conv_integer(inCmdUser_I))(30) <= '1';
-
-									voteCount(conv_integer(inCmdUser_I)) <= (others => '0');
-
-								end if;
-
-								if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL or sinceHeardFromLeader(conv_integer(inCmdUser_I)) > 2 ** 30) then
-									traceLoc                                        <= "00010010";
-									sinceHeardFromLeader(conv_integer(inCmdUser_I)) <= (others => '0');
-
-									myPhase(conv_integer(inCmdUser_I))  <= PH_ELECTION;
-									prevRole(conv_integer(inCmdUser_I)) <= myRole(conv_integer(inCmdUser_I));
-
-									voteCount(conv_integer(inCmdUser_I)) <= (others => '0');
-
-									votedEpoch(conv_integer(inCmdUser_I)) <= myEpoch(conv_integer(inCmdUser_I));
-									votedZxid(conv_integer(inCmdUser_I))  <= myZxid(conv_integer(inCmdUser_I));
-									syncFrom(conv_integer(inCmdUser_I))   <= myPeerId(conv_integer(inCmdUser_I));
-
-									if (myPeerId(conv_integer(inCmdUser_I)) = nextLeaderId(conv_integer(inCmdUser_I))) then
-										-- we wait...
-										voteCount(conv_integer(inCmdUser_I)) <= (others => '0');
-									else
-										-- now we send our epoch to the proposed leader
-										myState    <= ST_PROP_LEADER;
-										inCmdReady <= '0';
-									end if;
-								end if;
+								myState <= ST_TIMEOUT_LEADER;
+								inCmdReady <= '0';
 
 							end if;
 
@@ -976,7 +860,7 @@ begin
 
 							-- SETUP PEER
 							when (OPCODE_SETUPPEER) =>
-								myPeerId(conv_integer(inCmdUser)) <= inCmdPeerId;
+								myPeerId(conv_integer(inCmdUser)) <= inCmdPeerId(PEER_BITS-1 downto 0);
 
 								myEpoch(conv_integer(inCmdUser))    <= (others => '0');
 								myEpoch(conv_integer(inCmdUser))(0) <= '1';
@@ -994,11 +878,11 @@ begin
 
 							-- SET OWN OR OTHER's ROLE
 							when (OPCODE_SETLEADER) =>
-								if (inCmdPeerId = myPeerId(conv_integer(inCmdUser))) then
+								if (inCmdPeerId = preloadMyPeerId) then
 									prevRole(conv_integer(inCmdUser))     <= myRole(conv_integer(inCmdUser));
 									myRole(conv_integer(inCmdUser))       <= ROLE_LEADER;
 									proposedZxid(conv_integer(inCmdUser)) <= myZxid(conv_integer(inCmdUser));
-									leaderPeerId(conv_integer(inCmdUser)) <= inCmdPeerId;
+									leaderPeerId(conv_integer(inCmdUser)) <= inCmdPeerId(PEER_BITS-1 downto 0);
 									if (inCmdPeerId < peerCount(conv_integer(inCmdUser))) then
 										nextLeaderId(conv_integer(inCmdUser)) <= inCmdPeerId + 1;
 									else
@@ -1010,7 +894,7 @@ begin
 									prevRole(conv_integer(inCmdUser)) <= myRole(conv_integer(inCmdUser));
 									myRole(conv_integer(inCmdUser))   <= ROLE_FOLLOWER;
 
-									leaderPeerId(conv_integer(inCmdUser)) <= inCmdPeerId;
+									leaderPeerId(conv_integer(inCmdUser)) <= inCmdPeerId(PEER_BITS-1 downto 0);
 
 									if (inCmdPeerId < peerCount(conv_integer(inCmdUser))) then
 										nextLeaderId(conv_integer(inCmdUser)) <= inCmdPeerId + 1;
@@ -1024,7 +908,7 @@ begin
 								myState    <= ST_WAITOP;
 								inCmdReady <= '1';
 
-								if (myPeerId(conv_integer(inCmdUser)) /= 0 and myPhase(conv_integer(inCmdUser)) = PH_STARTUP and peerCount(conv_integer(inCmdUser)) /= 0) then
+								if (preloadMyPeerId/= 0 and myPhase(conv_integer(inCmdUser)) = PH_STARTUP and peerCount(conv_integer(inCmdUser)) /= 0) then
 									myPhase(conv_integer(inCmdUser)) <= PH_NORMAL;
 								end if;
 
@@ -1049,11 +933,12 @@ begin
 									end if;
 
 									if (peerSessId(conv_integer(inCmdUser))((conv_integer(inCmdPeerId))) = 0) then
-										peerCount(conv_integer(inCmdUser))          <= peerCount(conv_integer(inCmdUser)) + 1;
-										peerCountForCommit(conv_integer(inCmdUser)) <= peerCount(conv_integer(inCmdUser)) + 2; -- adding two because peercount doesn't include myself
+										peerCount(conv_integer(inCmdUser))          <= preloadPeerCount + 1;
+										peerCountForCommit(conv_integer(inCmdUser)) <= preloadPeerCount + 2; -- adding two because peercount doesn't include myself
 									end if;
 
 									peerIP(conv_integer(inCmdUser))((conv_integer(inCmdPeerId))) <= inCmdEpoch(15 downto 0) & inCmdZxid;
+									peerIPNonZero(conv_integer(inCmdUser))((conv_integer(inCmdPeerId))) <= '1';
 
 									connToWaiting   <= '0';
 									connToIpAddress <= inCmdZxid;
@@ -1078,9 +963,13 @@ begin
 
 								returnState <= ST_FINISH_WRITEREQ;
 
-								for PEER in MAX_PEERS downto 0 loop
-									currPeerIP(PEER) <= peerIP(conv_integer(inCmdUser))(PEER);
-								end loop;
+								--for PEER in MAX_PEERS downto 0 loop
+								--	currPeerIP(PEER) <= peerIP(conv_integer(inCmdUser))(PEER);
+								--end loop;
+								inCmdUserReg <= inCmdUser;
+
+								preloadPeerIPNZ <= peerIPNonZero(conv_integer(inCmdUser));
+
 
 								myState    <= ST_SENDTOALL;
 								inCmdReady <= '0';
@@ -1120,31 +1009,50 @@ begin
 								end if;
 
 							when (OPCODE_PROPOSAL) =>
-								if (cmd_out_ready = '1' and malloc_ready = '1') then
-									log_add_valid <= '1';
-									log_add_zxid  <= inCmdZxid;
-									log_add_user  <= inCmdUser;
-									log_add_key   <= inCmdKey;
 
-									myZxid(conv_integer(inCmdUser)) <= inCmdZxid;
+								--sinceHeardFromLeader <= (others => '0');
 
-									cmd_out_valid                                                                 <= '1';
-									cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
-									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_ACKPROPOSE, 8));
-									cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= inCmdEpoch;
-									cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= inCmdZxid;
-									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser));
-									cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(leaderPeerId(conv_integer(inCmdUser)))); --inCmdSessID;
-									cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_SETNEXT, CMD_HTOP_LEN));
-									cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= inCmdPayloadSize;
-									cmd_out_key                                                                   <= inCmdKey;
-                  cmd_out_user                                                                  <= inCmdUser;
+								if (inCmdZxid = preloadMyZxid + 1 and inCmdEpoch = preloadMyEpoch) then
+									--myState    <= ST_HANDLEOP;
+									--inCmdReady <= '0';								
 
-									malloc_valid <= '1';
-									malloc_data  <= inCmdPayloadSize(15 - 3 downto 0) & "000";
+									if (cmd_out_ready = '1' and malloc_ready = '1') then
+										log_add_valid <= '1';
+										log_add_zxid  <= inCmdZxid;
+										log_add_user  <= inCmdUser;
+										log_add_key   <= inCmdKey;
 
+										myZxid(conv_integer(inCmdUser)) <= inCmdZxid;
+
+										cmd_out_valid                                                                 <= '1';
+										cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
+										cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_ACKPROPOSE, 8));
+										cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= inCmdEpoch;
+										cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= inCmdZxid;
+										cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+										cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
+										cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(leaderPeerId(conv_integer(inCmdUser)))); --inCmdSessID;
+										cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_SETNEXT, CMD_HTOP_LEN));
+										cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= inCmdPayloadSize;
+										cmd_out_key                                                                   <= inCmdKey;
+	                  					cmd_out_user                                                                  <= inCmdUser;
+
+										malloc_valid <= '1';
+										malloc_data  <= inCmdPayloadSize(15 - 3 downto 0) & "000";
+
+										myState    <= ST_WAITOP;
+										inCmdReady <= '1';
+									end if;
+
+								else
+									--myState <= ST_REQUESTSYNC;
+									--myState      <= ST_HANDLEOP;									
+									--inCmdReady   <= '0';
 									myState    <= ST_WAITOP;
 									inCmdReady <= '1';
+
+									error_valid  <= '1';
+									error_opcode <= "1010" & inCmdOpCode_I(3 downto 0);
 								end if;
 
 							when (OPCODE_SYNCRESP) =>
@@ -1157,6 +1065,30 @@ begin
 
 								myState    <= ST_WAITOP;
 								inCmdReady <= '1';
+
+							when (OPCODE_SYNCREQ) =>
+				
+								syncZxid(conv_integer(inCmdUser)) <= inCmdZxid;
+								preloadSyncZxid <= inCmdZxid;							
+
+								if (myRole(conv_integer(inCmdUser)) = ROLE_FOLLOWER) then
+									proposedZxid(conv_integer(inCmdUser)) <= myZxid(conv_integer(inCmdUser));
+								end if;
+
+								if (proposedZxid(conv_integer(inCmdUser)) - inCmdZxid < 128) then
+									myState    <= ST_GETLOGSYNC;
+									inCmdReady <= '0';
+								else
+									myState <= ST_WAITOP; --ST_DRAMSYNC;
+									if (syncPrepare = '0') then
+										syncModeWaited <= (others => '0');
+										syncPeerId     <= inCmdPeerID(PEER_BITS-1 downto 0);
+									end if;
+									syncPrepare <= '1';
+									inCmdReady <= '1';
+								end if;
+
+
 
 							when (OPCODE_SYNCDRAM) =>
 								log_add_valid <= '1';
@@ -1185,7 +1117,8 @@ begin
 									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1)                           <= '1'; -- this is to stop the getter from sending an answer
 									cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)    <= myEpoch(conv_integer(inCmdUser));
 									cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)       <= inCmdZxid;
-									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC) <= myPeerId(conv_integer(inCmdUser));
+									cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 									cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC) <= (others => '1');
 
 									cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC) <= std_logic_vector(conv_unsigned(HTOP_FLIPPOINT, CMD_HTOP_LEN));
@@ -1212,47 +1145,58 @@ begin
 								myState    <= ST_WAITOP;
 								inCmdReady <= '1';
 
-								if (thisPeersAckedZxid + 1 = inCmdZxid) then
-									peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= inCmdZxid;
+								
+								peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= inCmdZxid;
 
-									if (thisPeersCmtdZxid = thisPeersAckedZxid) then
-										-- this means that we did not send them the commit for
-										-- this zxid yet
+								if (thisPeersCmtdZxid = thisPeersAckedZxid) then
+									-- this means that we did not send them the commit for
+									-- this zxid yet
 
-										loopIteration       <= peerCount(conv_integer(inCmdUser)) + 1;
-										cmdForParallelValid <= '0';
-										cmdForParallelData  <= (others => '0');
+									loopIteration       <= peerCount(conv_integer(inCmdUser)) + 1;
+									cmdForParallelValid <= '0';
+									cmdForParallelData  <= (others => '0');
 
-										quorumIteration <= peerCount(conv_integer(inCmdUser)) + 1;
-										commitableCount <= (others => '0');
+                                    quorumIteration <= peerCount(conv_integer(inCmdUser)) + 1;
+									quorumIterationVar := peerCount(conv_integer(inCmdUser)) + 1;
+									quorumIterationMinus1 <= peerCount(conv_integer(inCmdUser));
+									commitableCount <= (others => '0');
 
-										for PEER in MAX_PEERS downto 0 loop
-											currPeerIP(PEER) <= peerIP(conv_integer(inCmdUser))(PEER);
-										end loop;
+									--for PEER in MAX_PEERS downto 0 loop
+									--	currPeerIP(PEER) <= peerIP(conv_integer(inCmdUser))(PEER);
+									--end loop;
+									inCmdUserReg <= inCmdUser;
 
-										myState    <= ST_CHKQRM_ACKS;
-										inCmdReady <= '0';
-									end if;
+									-- TODO Make sure that this read sees the potential changes from before the if...
+									preloadPeerZxidAck <= peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & quorumIterationVar(PEER_BITS-1 downto 0)));
+									preloadPeerZxidCmt <= peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & quorumIterationVar(PEER_BITS - 1 downto 0))); 
 
-								else
-									error_valid  <= '1';
-									error_opcode <= "1000" & inCmdOpCode(3 downto 0);
+
+									preloadPeerCount <= peerCount(conv_integer(inCmdUser));
+									preloadPeerCountForCommit <= peerCountForCommit(conv_integer(inCmdUser));
+									preloadMyZxid <= myZxid(conv_integer(inCmdUser));
+
+									preloadPeerIPNZ <= peerIPNonZero(conv_integer(inCmdUser));
+
+									myState    <= ST_CHKQRM_ACKS;
+									inCmdReady <= '0';
 								end if;
+
+							
 
 							when (OPCODE_ACKEPOCH) =>
 								myState    <= ST_WAITOP;
 								inCmdReady <= '1';
 
 								if (myRole(conv_integer(inCmdUser)) = ROLE_LEADER and myPhase(conv_integer(inCmdUser)) = PH_SYNC) then
-									if (syncFrom(conv_integer(inCmdUser)) = inCmdPeerId_I) then
+									if (syncFrom(conv_integer(inCmdUser)) = inCmdPeerId(PEER_BITS-1 downto 0)) then
 										myState    <= ST_SYNC_ELECTION;
 										inCmdReady <= '0';
 									else
-										if (syncFrom(conv_integer(inCmdUser)) = myPeerId(conv_integer(inCmdUser))) then
+										if (syncFrom(conv_integer(inCmdUser)) = preloadMyPeerId) then
 											myPhase(conv_integer(inCmdUser))         <= PH_NORMAL;
-											myEpoch(conv_integer(inCmdUser))         <= votedEpoch(conv_integer(inCmdUser));
-											leaderPeerId(conv_integer(inCmdUser))    <= myPeerId(conv_integer(inCmdUser));
-											proposedZxid(conv_integer(inCmdUser))    <= votedZxid(conv_integer(inCmdUser));
+											myEpoch(conv_integer(inCmdUser))         <= preloadVotedEpoch;
+											leaderPeerId(conv_integer(inCmdUser))    <= preloadMyPeerId;
+											proposedZxid(conv_integer(inCmdUser))    <= preloadVotedZxid;
 											silenceMeasured(conv_integer(inCmdUser)) <= '0';
 										end if;
 									end if;
@@ -1260,15 +1204,15 @@ begin
 
 								if (myRole(conv_integer(inCmdUser)) = ROLE_LEADER and myPhase(conv_integer(inCmdUser)) = PH_ELECTION) then
 									myPhase(conv_integer(inCmdUser))      <= PH_NORMAL;
-									myEpoch(conv_integer(inCmdUser))      <= votedEpoch(conv_integer(inCmdUser));
-									leaderPeerId(conv_integer(inCmdUser)) <= myPeerId(conv_integer(inCmdUser));
-									proposedZxid(conv_integer(inCmdUser)) <= votedZxid(conv_integer(inCmdUser));
+									myEpoch(conv_integer(inCmdUser))      <= preloadVotedEpoch;
+									leaderPeerId(conv_integer(inCmdUser)) <= preloadMyPeerId;
+									proposedZxid(conv_integer(inCmdUser)) <= preloadVotedZxid;
 								end if;
 
 								if (myRole(conv_integer(inCmdUser)) = ROLE_LEADER) then
-									if (thisPeersAckedZxid <= votedZxid(conv_integer(inCmdUser))) then
-										peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= votedZxid(conv_integer(inCmdUser));
-										peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= votedZxid(conv_integer(inCmdUser));
+									if (thisPeersAckedZxid <= preloadVotedZxid) then
+										peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= preloadVotedZxid;
+										peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= preloadVotedZxid;
 									end if;
 								else
 									error_valid  <= '1';
@@ -1276,6 +1220,15 @@ begin
 								end if;
 
 							when (OPCODE_SYNCLEADER) =>
+
+								if (inCmdZxid = preloadVotedZxid) then
+									myZxid(conv_integer(inCmdUser))          <= preloadVotedZxid;
+									proposedZxid(conv_integer(inCmdUser))    <= preloadVotedZxid;
+									myPhase(conv_integer(inCmdUser))         <= PH_NORMAL;
+									proposedZxid(conv_integer(inCmdUser))    <= preloadVotedZxid;
+									silenceMeasured(conv_integer(inCmdUser)) <= '0';
+								end if;
+
 								log_add_valid <= '1';
 								log_add_zxid  <= inCmdZxid + 1;
 								log_add_key   <= inCmdKey;
@@ -1283,6 +1236,129 @@ begin
 
 								inCmdReady <= '1';
 								myState    <= ST_WAITOP;
+
+							when (OPCODE_CUREPOCH) =>
+
+								inCmdReady <= '1';
+								myState    <= ST_WAITOP;
+
+								if (preloadMyPhase = PH_ELECTION) then
+									
+									prevRole(conv_integer(inCmdUser))     <= preloadMyRole;
+									nextLeaderId(conv_integer(inCmdUser)) <= preloadMyPeerId;
+									peerEpoch(conv_integer(inCmdUser))(conv_integer(inCmdPeerId))(15 downto 0) <= inCmdEpoch;
+									voteCount(conv_integer(inCmdUser)) <= voteCount(conv_integer(inCmdUser)) + 1;
+
+									if (inCmdEpoch > votedEpoch(conv_integer(inCmdUser))) then
+										votedEpoch(conv_integer(inCmdUser)) <= inCmdEpoch;
+										votedZxid(conv_integer(inCmdUser))  <= inCmdZxid;
+										syncFrom(conv_integer(inCmdUser))   <= inCmdPeerId(PEER_BITS-1 downto 0);
+									end if;
+
+									if (voteCount(conv_integer(inCmdUser)) + 1 >= preloadPeerCount(PEER_BITS-1 downto 1)) then
+										inCmdReady <= '0';
+										myState    <= ST_SENDNEWEPOCH;
+									end if;
+
+								else 
+
+									--if (myPhase=PH_NORMAL and myRole=ROLE_FOLLOWER) then
+									--  inCmdReady <= '0';
+									--  myState <= ST_SAYWHOISLEADER;
+									--end if;
+
+									if (preloadMyPhase = PH_NORMAL and preloadMyRole = ROLE_LEADER and myEpoch(conv_integer(inCmdUser)) >= inCmdEpoch) then
+										inCmdReady <= '0';
+										myState    <= ST_SENDNEWEPOCH_JOIN;
+
+									end if;
+
+									if (preloadMyPhase = PH_NORMAL and ((preloadMyRole = ROLE_LEADER and myEpoch(conv_integer(inCmdUser)) < inCmdEpoch) or (preloadMyRole = ROLE_FOLLOWER))) then
+										nextLeaderId(conv_integer(inCmdUser)) <= preloadMyPeerId;
+										myPhase(conv_integer(inCmdUser))      <= PH_ELECTION;
+										prevRole(conv_integer(inCmdUser))     <= preloadMyRole;
+
+										peerEpoch(conv_integer(inCmdUser))(conv_integer(inCmdPeerId))(15 downto 0) <= inCmdEpoch;
+
+										voteCount(conv_integer(inCmdUser)) <= "0001";
+
+										if (myEpoch(conv_integer(inCmdUser)) < inCmdEpoch) then
+											votedEpoch(conv_integer(inCmdUser)) <= inCmdEpoch;
+											votedZxid(conv_integer(inCmdUser))  <= inCmdZxid;
+											syncFrom(conv_integer(inCmdUser))   <= inCmdPeerId(PEER_BITS-1 downto 0);
+										else
+											votedEpoch(conv_integer(inCmdUser)) <= myEpoch(conv_integer(inCmdUser));
+											votedZxid(conv_integer(inCmdUser))  <= preloadMyZxid;
+											syncFrom(conv_integer(inCmdUser))   <= preloadMyPeerId;
+										end if;
+
+										if (2 >= preloadPeerCount(PEER_BITS-1 downto 1)) then
+											inCmdReady <= '0';
+											myState    <= ST_SENDNEWEPOCH;
+										end if;
+									end if;
+								end if;
+
+							when (OPCODE_NEWEPOCH) =>
+
+								inCmdReady <= '1';
+								myState    <= ST_WAITOP;
+
+								if (inCmdPeerId(PEER_BITS-1 downto 0) = leaderPeerId(conv_integer(inCmdUser))) then
+									sinceHeardFromLeader(conv_integer(inCmdUser)) <= (others => '0');
+								end if;
+
+								if (myPhase(conv_integer(inCmdUser)) = PH_ELECTION and inCmdPeerId(PEER_BITS-1 downto 0) = nextLeaderId(conv_integer(inCmdUser))) then
+									myEpoch(conv_integer(inCmdUser))         <= inCmdEpoch;
+									myZxid(conv_integer(inCmdUser))          <= inCmdZxid;
+									leaderPeerId(conv_integer(inCmdUser))    <= inCmdPeerId(PEER_BITS-1 downto 0);
+									myPhase(conv_integer(inCmdUser))         <= PH_NORMAL;
+									prevRole(conv_integer(inCmdUser))        <= myRole(conv_integer(inCmdUser));
+									myRole(conv_integer(inCmdUser))          <= ROLE_FOLLOWER;
+									silenceMeasured(conv_integer(inCmdUser)) <= '0';
+
+									cmd_out_valid                                                                 <= '1';
+									cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
+									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_ACKEPOCH, 8));
+									cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= inCmdEpoch;
+									cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= inCmdZxid;
+									cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
+									cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(inCmdPeerId));
+									cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
+									cmd_out_key                                                                   <= inCmdKey;
+                					cmd_out_user                                                                  <= inCmdUser;
+
+								end if;
+
+								if (myPhase(conv_integer(inCmdUser)) = PH_NORMAL and myRole(conv_integer(inCmdUser)) = ROLE_LEADER and inCmdPeerId(PEER_BITS-1 downto 0) > myPeerId(conv_integer(inCmdUser))) then
+									if (inCmdPeerId(PEER_BITS-1 downto 0) < preloadPeerCount) then
+										nextLeaderId(conv_integer(inCmdUser)) <= inCmdPeerId + 1;
+									else
+										nextLeaderId(conv_integer(inCmdUser))    <= (others => '0');
+										nextLeaderId(conv_integer(inCmdUser))(0) <= '1';
+									end if;
+									leaderPeerId(conv_integer(inCmdUser)) <= inCmdPeerId(PEER_BITS-1 downto 0);
+									prevRole(conv_integer(inCmdUser))     <= myRole(conv_integer(inCmdUser));
+									myRole(conv_integer(inCmdUser))       <= ROLE_FOLLOWER;
+									myEpoch(conv_integer(inCmdUser))      <= inCmdEpoch;
+									myZxid(conv_integer(inCmdUser))       <= inCmdZxid;
+
+									cmd_out_valid                                                                 <= '1';
+									cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
+									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_ACKEPOCH, 8));
+									cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= inCmdEpoch;
+									cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= inCmdZxid;
+									cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
+									cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(inCmdPeerId));
+									cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
+									cmd_out_key                                                                   <= inCmdKey;
+                					cmd_out_user                                                                  <= inCmdUser;
+
+								--myPhase <= PH_ELECTION;
+								--myRole <= ROLE_FOLLOWER;
+								end if;
 
 							-- UNKNOWN/UNHANDLED OP CODE
 							when others =>
@@ -1323,7 +1399,7 @@ begin
 					when ST_SENDTOALL =>
 						traceLoc <= "00010011";
 						if (cmd_out_ready = '1') then
-							if (myPeerId(conv_integer(inCmdUser)) /= loopIteration and (not (loopIteration = 0)) and sendEnableMask(conv_integer(loopIteration)) = '1') then
+							if (preloadMyPeerId /= loopIteration and (not (loopIteration = 0)) and sendEnableMask(conv_integer(loopIteration)) = '1') then
 								if (returnState = ST_FINISH_COMMIT or returnState = ST_FINISH_COMMIT_LATE) then
 									peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & loopIteration(PEER_BITS - 1 downto 0))) <= inCmdZxid;
 								end if;
@@ -1336,7 +1412,8 @@ begin
 									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= sendOpcode;
 									cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= (others => '0');
 									cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= (others => '0');
-									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= peerCount(conv_integer(inCmdUser))(CMD_PEERID_LEN - 1 downto 0);
+									cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= peerCount(conv_integer(inCmdUser))(PEER_BITS-1 downto 0);
+									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto PEER_BITS + CMD_PEERID_LOC)       <= (others => '0');
 									cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= (others => '0');
 									cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_SETNEXT, CMD_HTOP_LEN));
 									cmd_out_key                                                                   <= inCmdKey;
@@ -1344,7 +1421,7 @@ begin
 
 								end if;
 
-								if (loopIteration < peerCount(conv_integer(inCmdUser)) + 2 and currPeerIP(conv_integer(loopIteration)) /= 0) then
+								if (loopIteration < peerCount(conv_integer(inCmdUser)) + 2 and preloadPeerIPNZ(conv_integer(loopIteration)) = '1') then
 									-- if this peer exists
 
 									--if (peerIP(conv_integer(loopIteration))(31 downto 24)/=0) then
@@ -1355,7 +1432,8 @@ begin
 									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= sendOpcode;
 									cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= sendEpoch;
 									cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= sendZxid;
-									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser));
+									cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+									cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 									cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(loopIteration));
 									if (sendOpcode = 2) then
 										cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC) <= std_logic_vector(conv_unsigned(HTOP_IGNOREPROP, CMD_HTOP_LEN));
@@ -1503,7 +1581,8 @@ begin
 							end if;
 							cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)    <= myEpoch(conv_integer(inCmdUser)); --sessMemDataOut(47 downto 32) & myEpoch(15 downto 0); -- RESPONSE TIME DEBUG
 							cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)       <= inCmdZxid;
-							cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC) <= myPeerId(conv_integer(inCmdUser));
+							cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+							cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 							cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC) <= sessMemDataOut(15 downto 0);
 							cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)       <= std_logic_vector(conv_unsigned(HTOP_FLIPPOINT, CMD_HTOP_LEN));
 							cmdSent                                                                 <= '1';
@@ -1529,58 +1608,77 @@ begin
 					-----------------------------------------------------------------------
 					when ST_CHKQRM_ACKS =>
 						traceLoc <= "00010111";
+
+						if (preloadMyZxid > inCmdZxid - 1) then
+							flagLate <= '1';
+						else 
+							flagLate <= '0';
+						end if;
+
 						if (quorumIteration = 0) then
 
-							--for majority need to add 1 to the peercount to count	      
-							--ZSOLT
-							if ((peerCount(conv_integer(inCmdUser)) > 2 and commitableCountTimesTwo >= (peerCountForCommit(conv_integer(inCmdUser))))
-                   or (peerCount(conv_integer(inCmdUser)) < 3 and commitableCount >= peerCount(conv_integer(inCmdUser))) 
-                    or (commitableCount = 1 and myZxid(conv_integer(inCmdUser)) > inCmdZxid - 1)) then
-								sendPayloadSize <= (others => '0');
-								sendZxid        <= inCmdZxid;
-								sendEpoch       <= inCmdEpoch;
-								sendOpcode      <= std_logic_vector(conv_unsigned(OPCODE_COMMIT, 8));
-
-								for X in 0 to MAX_PEERS loop
-									if (sendEnableMask(X) = '1' and myPeerId(conv_integer(inCmdUser)) /= X) then
-									-- moved this assignment into sendtoall
-									--peerZxidCmt(conv_integer(inCmdUser(USER_BITS-1 downto 0)&conv_std_logic_vector(X, PEER_BITS))) <= inCmdZxid;
-									end if;
-								end loop;
-
-								if (commitableCount = 1 and myZxid(conv_integer(inCmdUser)) > inCmdZxid - 1) then
-									returnState <= ST_FINISH_COMMIT_LATE;
-								else
-									returnState <= ST_FINISH_COMMIT;
-								end if;
-
-								myState    <= ST_SENDTOALL;
-								inCmdReady <= '0';
-								sendCount  <= (others => '0');
-							else
-								myState        <= ST_WAITOP;
-								inCmdReady     <= '1';
-								sendEnableMask <= (others => '1');
-							end if;
+							myState <= ST_CHKQRM_ACKS_2;
 
 						else
 							quorumIteration <= quorumIteration - 1;
+							quorumIterationMinus1 <= quorumIterationMinus1 - 1;
 
-							if (myPeerId(conv_integer(inCmdUser)) /= quorumIteration and quorumIteration /= 0) then
-								if (currPeerIP(conv_integer(quorumIteration)) /= 0 and peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & quorumIteration(PEER_BITS-1 downto 0))) > (inCmdZxid - 1) and peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & quorumIteration(PEER_BITS - 1 downto 0
-											))) = (inCmdZxid - 1)) then
+							preloadPeerZxidAck <= peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & quorumIterationMinus1(PEER_BITS-1 downto 0)));
+							preloadPeerZxidCmt <= peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & quorumIterationMinus1(PEER_BITS - 1 downto 0))); 
+
+							if (preloadMyPeerId /= quorumIteration and quorumIteration /= 0) then
+								if (preloadPeerIPNZ(conv_integer(quorumIteration)) ='1' and preloadPeerZxidAck > (inCmdZxid - 1) and preloadPeerZxidCmt = (inCmdZxid - 1)) then
 									commitableCount <= commitableCount + 1;
 								else
 									sendEnableMask(conv_integer(quorumIteration)) <= '0';
 								end if;
 							else
-								if (myPeerId(conv_integer(inCmdUser)) = quorumIteration and myZxid(conv_integer(inCmdUser)) = inCmdZxid - 1) then
+								if (preloadMyPeerId = quorumIteration and preloadMyZxid = inCmdZxid - 1) then
 									commitableCount <= commitableCount + 1;
 								else
 									sendEnableMask(conv_integer(quorumIteration)) <= '0';
 								end if;
 							end if;
 						end if;
+
+					when ST_CHKQRM_ACKS_2 =>
+
+						--for majority need to add 1 to the peercount to count	      
+						--ZSOLT
+						if ((preloadPeerCount > 2 and commitableCountTimesTwo >= (preloadPeerCountForCommit))
+		                   or (preloadPeerCount < 3 and commitableCount >= preloadPeerCount) 
+		                    or (commitableCount = 1 and flagLate = '1')) 
+
+						then
+
+							sendPayloadSize <= (others => '0');
+							sendZxid        <= inCmdZxid;
+							sendEpoch       <= inCmdEpoch;
+							sendOpcode      <= std_logic_vector(conv_unsigned(OPCODE_COMMIT, 8));
+
+							for X in 0 to MAX_PEERS loop
+								if (sendEnableMask(X) = '1' and preloadMyPeerId /= X) then
+								-- moved this assignment into sendtoall
+								--peerZxidCmt(conv_integer(inCmdUser(USER_BITS-1 downto 0)&conv_std_logic_vector(X, PEER_BITS))) <= inCmdZxid;
+								end if;
+							end loop;
+
+							if (commitableCount = 1 and flagLate='1') then
+								returnState <= ST_FINISH_COMMIT_LATE;
+							else
+								returnState <= ST_FINISH_COMMIT;
+							end if;
+
+							myState    <= ST_SENDTOALL;
+							inCmdReady <= '0';
+							sendCount  <= (others => '0');
+						else
+							myState        <= ST_WAITOP;
+							inCmdReady     <= '1';
+							sendEnableMask <= (others => '1');
+						end if;
+
+
 
 					when ST_WAIT_MEMWRITE =>
 						traceLoc <= "00011000";
@@ -1595,7 +1693,8 @@ begin
 						cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_SYNCREQ, 8));
 						cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= myEpoch(conv_integer(inCmdUser));
 						cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= myZxid(conv_integer(inCmdUser)) + 1;
-						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser));
+						cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 						cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(leaderPeerId(conv_integer(inCmdUser)))); --inCmdSessID;
 						cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
 						cmd_out_user                                                                  <= inCmdUser;
@@ -1608,7 +1707,7 @@ begin
 						traceLoc         <= "00011010";
 						log_search_valid <= '1';
 						log_search_since <= '0';
-						log_search_zxid  <= syncZxid(conv_integer(inCmdUser));
+						log_search_zxid  <= preloadSyncZxid;
 						log_search_user  <= inCmdUser;
 
 						myState <= ST_SENDSYNC;
@@ -1626,8 +1725,8 @@ begin
 							cmd_out_valid <= '1';
 							--cmd_out_data(CMD_PAYLSIZE_LOC+CMD_PAYLSIZE_LEN-1 downto CMD_PAYLSIZE_LOC) <= log_found_size;
 
-							if (myRole(conv_integer(inCmdUser)) = ROLE_LEADER) then
-								if (syncZxid(conv_integer(inCmdUser)) = proposedZxid(conv_integer(inCmdUser))) then
+							if (myRole(conv_integer(inCmdUser)) = ROLE_LEADER) then								
+								if (preloadSyncZxid = proposedZxid(conv_integer(inCmdUser))) then
 									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC) <= std_logic_vector(conv_unsigned(OPCODE_PROPOSAL, 8));
 								else
 									cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC) <= std_logic_vector(conv_unsigned(OPCODE_SYNCRESP, 8));
@@ -1637,8 +1736,9 @@ begin
 							end if;
 
 							cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)    <= myEpoch(conv_integer(inCmdUser)); -- RESPONSE TIME DEBUG
-							cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)       <= syncZxid(conv_integer(inCmdUser));
-							cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC) <= myPeerId(conv_integer(inCmdUser));
+							cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)       <= preloadSyncZxid;
+							cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+							cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 							cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC) <= peerSessId(conv_integer(inCmdUser))(conv_integer(inCmdPeerId)); --inCmdSessID;
 							cmdSent                                                                 <= '1';
 
@@ -1647,14 +1747,14 @@ begin
 						if (foundInLog = '1' and cmd_out_ready = '1') then
 							cmdSent    <= '0';
 							foundInLog <= '0';
-							if (syncZxid(conv_integer(inCmdUser)) >= proposedZxid(conv_integer(inCmdUser))) then
+							if (preloadSyncZxid >= proposedZxid(conv_integer(inCmdUser))) then
 								myState    <= ST_WAITOP;
 								inCmdReady <= '1';
 							else
 								myState                                                                                            <= ST_GETLOGSYNC;
-								peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= syncZxid(conv_integer(inCmdUser));
-								peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= syncZxid(conv_integer(inCmdUser));
-								syncZxid(conv_integer(inCmdUser))                                                                  <= syncZxid(conv_integer(inCmdUser)) + 1;
+								peerZxidAck(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= preloadSyncZxid;
+								peerZxidCmt(conv_integer(inCmdUser(USER_BITS - 1 downto 0) & inCmdPeerId(PEER_BITS - 1 downto 0))) <= preloadSyncZxid;
+								syncZxid(conv_integer(inCmdUser))                                                                  <= preloadSyncZxid + 1;
 							end if;
 						end if;
 
@@ -1665,7 +1765,8 @@ begin
 						cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_CUREPOCH, 8));
 						cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= myEpoch(conv_integer(inCmdUser)) + 1;
 						cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= myZxid(conv_integer(inCmdUser));
-						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser));
+						cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 						cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(nextLeaderId(conv_integer(inCmdUser))));
 						cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
 						cmd_out_user                                                                  <= inCmdUser;
@@ -1702,7 +1803,8 @@ begin
 						cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_NEWEPOCH, 8));
 						cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= myEpoch(conv_integer(inCmdUser));
 						cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= myZxid(conv_integer(inCmdUser));
-						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser));
+						cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= preloadMyPeerId;
+						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 						cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(inCmdPeerId));
 						cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
 						cmd_out_user                                                                  <= inCmdUser;
@@ -1718,7 +1820,8 @@ begin
 						cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_SETLEADER, 8));
 						cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= (others => '0');
 						cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= (others => '0');
-						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= leaderPeerId(conv_integer(inCmdUser));
+						cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= leaderPeerId(conv_integer(inCmdUser));
+						cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 						cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(inCmdPeerId));
 						cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
 						cmd_out_user                                                                  <= inCmdUser;
@@ -1730,13 +1833,14 @@ begin
 					when ST_SYNC_ELECTION =>
 						traceLoc <= "00100000";
 						myEpoch  <= votedEpoch;
-						if (votedZxid(conv_integer(inCmdUser)) > myZxid(conv_integer(inCmdUser))) then
+						if (preloadVotedZxid > preloadMyZxid) then
 							cmd_out_valid                                                                 <= '1';
 							cmd_out_data(CMD_PAYLSIZE_LOC + CMD_PAYLSIZE_LEN - 1 downto CMD_PAYLSIZE_LOC) <= (others => '0');
 							cmd_out_data(CMD_TYPE_LEN + CMD_TYPE_LOC - 1 downto CMD_TYPE_LOC)             <= std_logic_vector(conv_unsigned(OPCODE_SYNCREQ, 8));
 							cmd_out_data(CMD_EPOCH_LOC + CMD_EPOCH_LEN - 1 downto CMD_EPOCH_LOC)          <= myEpoch(conv_integer(inCmdUser));
-							cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= votedZxid(conv_integer(inCmdUser));
-							cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       <= myPeerId(conv_integer(inCmdUser));
+							cmd_out_data(CMD_ZXID_LOC + CMD_ZXID_LEN - 1 downto CMD_ZXID_LOC)             <= preloadVotedZxid;
+							cmd_out_data(PEER_BITS + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC)       			 <= leaderPeerId(conv_integer(inCmdUser));
+							cmd_out_data(CMD_PEERID_LEN + CMD_PEERID_LOC - 1 downto CMD_PEERID_LOC +PEER_BITS)   <= (others=>'0');
 							cmd_out_data(CMD_SESSID_LOC + CMD_SESSID_LEN - 1 downto CMD_SESSID_LOC)       <= peerSessId(conv_integer(inCmdUser))(conv_integer(inCmdPeerId));
 							cmd_out_data(CMD_HTOP_LOC + CMD_HTOP_LEN - 1 downto CMD_HTOP_LOC)             <= std_logic_vector(conv_unsigned(HTOP_IGNORE, CMD_HTOP_LEN));
 							cmd_out_user                                                                  <= inCmdUser;
@@ -1744,7 +1848,7 @@ begin
 						else
 							prevRole(conv_integer(inCmdUser))     <= myRole(conv_integer(inCmdUser));
 							myRole(conv_integer(inCmdUser))       <= ROLE_LEADER;
-							proposedZxid(conv_integer(inCmdUser)) <= myZxid(conv_integer(inCmdUser));
+							proposedZxid(conv_integer(inCmdUser)) <= preloadMyZxid;
 							myPhase(conv_integer(inCmdUser))      <= PH_NORMAL;
 
 						end if;
@@ -1758,6 +1862,54 @@ begin
 							inCmdReady    <= '1';
 
 						end if;
+
+					when ST_TIMEOUT_LEADER =>
+
+						myState <= ST_WAITOP;
+						inCmdReady <= '1';
+
+						if (myPhase(conv_integer(inCmdUser)) = PH_ELECTION and sinceHeardFromLeader(conv_integer(inCmdUser)) < 2 ** 30) then
+							traceLoc <= "00010001";
+							-- this was a failed election round...
+
+							if (nextLeaderId(conv_integer(inCmdUser)) = peercount(conv_integer(inCmdUser)) + 1) then
+								nextLeaderId(conv_integer(inCmdUser))    <= (others => '0');
+								nextLeaderId(conv_integer(inCmdUser))(0) <= '1';
+							else
+								nextLeaderId(conv_integer(inCmdUser)) <= nextLeaderId(conv_integer(inCmdUser)) + 1;
+							end if;
+
+							sinceHeardFromLeader(conv_integer(inCmdUser))     <= (others => '0');
+							sinceHeardFromLeader(conv_integer(inCmdUser))(30) <= '1';
+
+							voteCount(conv_integer(inCmdUser)) <= (others => '0');
+
+						end if;
+
+						if (myPhase(conv_integer(inCmdUser)) = PH_NORMAL or sinceHeardFromLeader(conv_integer(inCmdUser)) > 2 ** 30) then
+							traceLoc                                        <= "00010010";
+							sinceHeardFromLeader(conv_integer(inCmdUser)) <= (others => '0');
+
+							myPhase(conv_integer(inCmdUser))  <= PH_ELECTION;
+							prevRole(conv_integer(inCmdUser)) <= myRole(conv_integer(inCmdUser));
+
+							voteCount(conv_integer(inCmdUser)) <= (others => '0');
+
+							votedEpoch(conv_integer(inCmdUser)) <= myEpoch(conv_integer(inCmdUser));
+							votedZxid(conv_integer(inCmdUser))  <= myZxid(conv_integer(inCmdUser));
+							syncFrom(conv_integer(inCmdUser))   <= myPeerId(conv_integer(inCmdUser));
+
+							if (myPeerId(conv_integer(inCmdUser)) = nextLeaderId(conv_integer(inCmdUser))) then
+								-- we wait...
+								voteCount(conv_integer(inCmdUser)) <= (others => '0');
+							else
+								-- now we send our epoch to the proposed leader
+								myState    <= ST_PROP_LEADER;
+								inCmdReady <= '0';
+							end if;
+						end if;
+
+
 
 					when others =>
 				end case;

@@ -121,6 +121,7 @@ module vcu1525_top_multes
   wire dclk;  
   wire uclk;
   
+  wire fclk; //300Mhz clock
   /*
        IBUFDS #(
   .DQS_BIAS("FALSE")  // (FALSE, TRUE)
@@ -137,6 +138,7 @@ clockdown (
      (
       // Clock out ports
       .clk_out1(dclk),     // output clk_out1
+      .clk_out2(fclk),     // output clk_out1
       // Status and control signals
       .locked(clockdown_locked),       // output locked
      // Clock in ports
@@ -1228,7 +1230,7 @@ wire           upd_s_axis_write_tvalid_x;
 wire          upd_s_axis_write_tready_x;
 
 
-muu_TopWrapper multiuser_kvs_top  (
+muu_TopWrapper_fclk multiuser_kvs_top  (
 //zookeeper_tcp_top_parallel_nkv nkv_TopWrapper (
   .m_axis_open_connection_TVALID(axis_open_connection_TVALID),
   .m_axis_open_connection_TDATA(axis_open_connection_TDATA),
@@ -1341,6 +1343,8 @@ muu_TopWrapper multiuser_kvs_top  (
   .bmap_wrcmd_valid(bmap_wrcmd_valid),
   .bmap_wrcmd_ready(bmap_wrcmd_ready), 
   
+  .fclk(fclk),
+  
   .aclk(uclk),                                                          // input wire aclk
   .aresetn(~ureset)                                                    // input wire aresetn
 );
@@ -1358,18 +1362,20 @@ reg c1_init_calib_complete_r1, c1_init_calib_complete_r2;
 //-
 
 always @(posedge uclk) 
-    if (~ureset == 0) begin
+begin
+    /*if (~ureset == 0) begin
         c0_init_calib_complete_r1 <= 1'b0;
         c0_init_calib_complete_r2 <= 1'b0;
         c1_init_calib_complete_r1 <= 1'b0;
         c1_init_calib_complete_r2 <= 1'b0;
     end
-    else begin
+    else begin*/
         c0_init_calib_complete_r1 <= c0_init_calib_complete;
         c0_init_calib_complete_r2 <= c0_init_calib_complete_r1;
         c1_init_calib_complete_r1 <= c1_init_calib_complete;
         c1_init_calib_complete_r2 <= c1_init_calib_complete_r1;
-    end
+    //end
+end
 
 assign ddr3_calib_complete = c0_init_calib_complete_r2 & c1_init_calib_complete_r2;
 assign init_calib_complete = ddr3_calib_complete;

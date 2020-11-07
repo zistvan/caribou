@@ -250,8 +250,11 @@ ethernet_ip ethernet_inst
     .gt_refclk_out (gt_refclk_out),
     .sys_reset (sys_reset),
     .dclk (dclk),
-
-
+    
+    //added
+    .qpllreset_in_0(sys_reset),
+    //-----
+    
     .gt_rxp_in(gt_rxp_in[0]),
     .gt_rxn_in(gt_rxn_in[0]),
     .gt_txp_out(gt_txp_out[0]),
@@ -856,15 +859,15 @@ axis_data_fifo_64_cc rx_crossing (
   .s_axis_tkeep(axis_rxif_to_fifo_tkeep[idx]),              // input wire [7 : 0] s_axis_tkeep
   .s_axis_tlast(axis_rxif_to_fifo_tlast[idx]),              // input wire s_axis_tlast
   .m_axis_aclk(net_clk),                // input wire m_axis_aclk
-  .m_axis_aresetn(aresetn),          // input wire m_axis_aresetn
+//  .m_axis_aresetn(aresetn),          // input wire m_axis_aresetn
   .m_axis_tvalid(m_axis_tvalid[idx]),            // output wire m_axis_tvalid
   .m_axis_tready(m_axis_tready[idx]),            // input wire m_axis_tready
   .m_axis_tdata(m_axis_tdata[idx]),              // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(m_axis_tkeep[idx]),              // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(m_axis_tlast[idx]),              // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(m_axis_tlast[idx])              // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 end
@@ -932,15 +935,15 @@ axis_data_fifo_64_cc tx_crossing (
   .s_axis_tkeep(axis_tx_padding_to_fifo_tkeep[idx]),              // input wire [7 : 0] s_axis_tkeep
   .s_axis_tlast(axis_tx_padding_to_fifo_tlast[idx]),              // input wire s_axis_tlast
   .m_axis_aclk(tx_clk_out[idx]),                // input wire m_axis_aclk
-  .m_axis_aresetn(~(sys_reset | user_tx_reset[idx])),          // input wire m_axis_aresetn
+  //.m_axis_aresetn(~(sys_reset | user_tx_reset[idx])),          // input wire m_axis_aresetn
   .m_axis_tvalid(axis_tx_fifo_to_txif_tvalid[idx]),            // output wire m_axis_tvalid
   .m_axis_tready(axis_tx_fifo_to_txif_tready[idx]),            // input wire m_axis_tready
   .m_axis_tdata(axis_tx_fifo_to_txif_tdata[idx]),              // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_tx_fifo_to_txif_tkeep[idx]),              // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_tx_fifo_to_txif_tlast[idx]),              // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(axis_tx_fifo_to_txif_tlast[idx])             // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 ethernet_frame_padding_ip ethernet_frame_padding_inst (

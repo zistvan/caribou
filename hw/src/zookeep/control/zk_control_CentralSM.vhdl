@@ -1176,6 +1176,12 @@ begin
 										commitableCount <= (others => '0');
 										myState         <= ST_CHKQRM_ACKS;
 										inCmdReady      <= '0';
+
+
+										peerZxidAck(conv_integer(quorumIteration));
+										peerZxidCmt(conv_integer(quorumIteration));
+										peerIP(conv_integer(quorumIteration));
+
 									end if;
 
 								else

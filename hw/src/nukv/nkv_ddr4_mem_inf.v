@@ -843,7 +843,7 @@ wire        axis_s2_rxread_cc2dm_tlast;
 
 axis_data_fifo_kvs_to_dm_512 cc_rxwrite_1 (
   .s_axis_aresetn(reset156_25_n),  // input wire s_axis_aresetn
-  .m_axis_aresetn(c1_aresetn_r),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(c1_aresetn_r),  // input wire m_axis_aresetn
   .s_axis_aclk(clk156_25),        // input wire s_axis_aclk
 /*  
   .s_axis_tvalid(toeRX_s_axis_write_tvalid),    // input wire s_axis_tvalid
@@ -864,15 +864,15 @@ axis_data_fifo_kvs_to_dm_512 cc_rxwrite_1 (
   .m_axis_tready(axis_s1_rxwrite_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_s1_rxwrite_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_s1_rxwrite_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_s1_rxwrite_cc2dm_tlast),      // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(axis_s1_rxwrite_cc2dm_tlast)      // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 axis_data_fifo_kvs_to_dm_512 cc_rxwrite_2 (
   .s_axis_aresetn(reset156_25_n),  // input wire s_axis_aresetn
-  .m_axis_aresetn(c1_aresetn_r),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(c1_aresetn_r),  // input wire m_axis_aresetn
   .s_axis_aclk(clk156_25),        // input wire s_axis_aclk
 /*  
   .s_axis_tvalid(toeRX_s_axis_write_tvalid),    // input wire s_axis_tvalid
@@ -893,10 +893,10 @@ axis_data_fifo_kvs_to_dm_512 cc_rxwrite_2 (
   .m_axis_tready(axis_s2_rxwrite_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_s2_rxwrite_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_s2_rxwrite_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_s2_rxwrite_cc2dm_tlast),      // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(axis_s2_rxwrite_cc2dm_tlast)//,      // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 
@@ -940,7 +940,7 @@ fifo_dm_to_kvs_s upd_read_fifo (
 
 axis_data_fifo_kvs_to_dm_512 cc_rxread_1 (
   .s_axis_aresetn(c1_aresetn_r),  // input wire s_axis_aresetn
-  .m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
   .s_axis_aclk(c1_ui_clk),        // input wire s_axis_aclk
   .s_axis_tvalid(axis_s1_rxread_cc2dm_tvalid),    // input wire s_axis_tvalid
   .s_axis_tready(axis_s1_rxread_cc2dm_tready),    // output wire s_axis_tready
@@ -959,17 +959,17 @@ axis_data_fifo_kvs_to_dm_512 cc_rxread_1 (
   .m_axis_tready(axis_toe_aux1_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_toe_aux1_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_toe_aux1_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_toe_aux1_cc2dm_tlast),      // output wire m_axis_tlast
+  .m_axis_tlast(axis_toe_aux1_cc2dm_tlast)      // output wire m_axis_tlast
   
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 
 axis_data_fifo_kvs_to_dm_512 cc_rxread_2 (
   .s_axis_aresetn(c1_aresetn_r),  // input wire s_axis_aresetn
-  .m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
   .s_axis_aclk(c1_ui_clk),        // input wire s_axis_aclk
   .s_axis_tvalid(axis_s2_rxread_cc2dm_tvalid),    // input wire s_axis_tvalid
   .s_axis_tready(axis_s2_rxread_cc2dm_tready),    // output wire s_axis_tready
@@ -988,11 +988,11 @@ axis_data_fifo_kvs_to_dm_512 cc_rxread_2 (
   .m_axis_tready(axis_toe_aux2_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_toe_aux2_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_toe_aux2_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_toe_aux2_cc2dm_tlast),      // output wire m_axis_tlast
+  .m_axis_tlast(axis_toe_aux2_cc2dm_tlast)//,      // output wire m_axis_tlast
   
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 wire ht_s_buf_read_cmd_tvalid;
@@ -1536,7 +1536,7 @@ wire        axis_s5_rxread_cc2dm_tlast;
 
 axis_data_fifo_kvs_to_dm_512 bmap_rxwrite (
   .s_axis_aresetn(reset156_25_n),  // input wire s_axis_aresetn
-  .m_axis_aresetn(c0_aresetn_r),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(c0_aresetn_r),  // input wire m_axis_aresetn
   .s_axis_aclk(clk156_25),        // input wire s_axis_aclk
 
   .s_axis_tvalid(bmap_s_axis_write_tvalid),    // input wire s_axis_tvalid
@@ -1550,15 +1550,15 @@ axis_data_fifo_kvs_to_dm_512 bmap_rxwrite (
   .m_axis_tready(axis_s3_rxwrite_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_s3_rxwrite_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_s3_rxwrite_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_s3_rxwrite_cc2dm_tlast),      // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(axis_s3_rxwrite_cc2dm_tlast)//,      // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 axis_data_fifo_tcp_to_dm_64 toeTX_rxwrite (
   .s_axis_aresetn(reset156_25_n),  // input wire s_axis_aresetn
-  .m_axis_aresetn(c0_aresetn_r),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(c0_aresetn_r),  // input wire m_axis_aresetn
   .s_axis_aclk(clk156_25),        // input wire s_axis_aclk
 
   .s_axis_tvalid(toeTX_s_axis_write_tvalid),    // input wire s_axis_tvalid
@@ -1572,15 +1572,15 @@ axis_data_fifo_tcp_to_dm_64 toeTX_rxwrite (
   .m_axis_tready(axis_s5_rxwrite_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_s5_rxwrite_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_s5_rxwrite_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_s5_rxwrite_cc2dm_tlast),      // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(axis_s5_rxwrite_cc2dm_tlast)     // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 axis_data_fifo_kvs_to_dm_512 ptr_rxwrite (
   .s_axis_aresetn(reset156_25_n),  // input wire s_axis_aresetn
-  .m_axis_aresetn(c0_aresetn_r),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(c0_aresetn_r),  // input wire m_axis_aresetn
   .s_axis_aclk(clk156_25),        // input wire s_axis_aclk
 
   
@@ -1595,10 +1595,10 @@ axis_data_fifo_kvs_to_dm_512 ptr_rxwrite (
   .m_axis_tready(axis_s4_rxwrite_cc2dm_tready),    // input wire m_axis_tready
   .m_axis_tdata(axis_s4_rxwrite_cc2dm_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(axis_s4_rxwrite_cc2dm_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(axis_s4_rxwrite_cc2dm_tlast),      // output wire m_axis_tlast
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  .m_axis_tlast(axis_s4_rxwrite_cc2dm_tlast)//,      // output wire m_axis_tlast
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 
@@ -1607,7 +1607,7 @@ axis_data_fifo_kvs_to_dm_512 ptr_rxwrite (
 
 axis_data_fifo_kvs_to_dm_512 bmap_rxread (
   .s_axis_aresetn(c0_aresetn_r),  // input wire s_axis_aresetn
-  .m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
   .s_axis_aclk(c0_ui_clk),        // input wire s_axis_aclk
   .s_axis_tvalid(axis_s3_rxread_cc2dm_tvalid),    // input wire s_axis_tvalid
   .s_axis_tready(axis_s3_rxread_cc2dm_tready),    // output wire s_axis_tready
@@ -1621,17 +1621,17 @@ axis_data_fifo_kvs_to_dm_512 bmap_rxread (
   .m_axis_tready(bmap_m_axis_read_tready),    // input wire m_axis_tready
   .m_axis_tdata(bmap_m_axis_read_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(bmap_m_axis_read_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(bmap_m_axis_read_tlast),      // output wire m_axis_tlast
+  .m_axis_tlast(bmap_m_axis_read_tlast)//,      // output wire m_axis_tlast
   
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 
 axis_data_fifo_tcp_to_dm_64 toeTX_rxread (
   .s_axis_aresetn(c0_aresetn_r),  // input wire s_axis_aresetn
-  .m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
   .s_axis_aclk(c0_ui_clk),        // input wire s_axis_aclk
   .s_axis_tvalid(axis_s5_rxread_cc2dm_tvalid),    // input wire s_axis_tvalid
   .s_axis_tready(axis_s5_rxread_cc2dm_tready),    // output wire s_axis_tready
@@ -1645,18 +1645,18 @@ axis_data_fifo_tcp_to_dm_64 toeTX_rxread (
   .m_axis_tready(toeTX_m_axis_read_tready),    // input wire m_axis_tready
   .m_axis_tdata(toeTX_m_axis_read_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(toeTX_m_axis_read_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(toeTX_m_axis_read_tlast),      // output wire m_axis_tlast
+  .m_axis_tlast(toeTX_m_axis_read_tlast)//,      // output wire m_axis_tlast
   
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 
 
 axis_data_fifo_kvs_to_dm_512 ptr_rxread (
   .s_axis_aresetn(c0_aresetn_r),  // input wire s_axis_aresetn
-  .m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
+  //.m_axis_aresetn(reset156_25_n),  // input wire m_axis_aresetn
   .s_axis_aclk(c0_ui_clk),        // input wire s_axis_aclk
   .s_axis_tvalid(axis_s4_rxread_cc2dm_tvalid),    // input wire s_axis_tvalid
   .s_axis_tready(axis_s4_rxread_cc2dm_tready),    // output wire s_axis_tready
@@ -1669,11 +1669,11 @@ axis_data_fifo_kvs_to_dm_512 ptr_rxread (
   .m_axis_tready(ptr_m_axis_read_tready),    // input wire m_axis_tready
   .m_axis_tdata(ptr_m_axis_read_tdata),      // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(ptr_m_axis_read_tkeep),      // output wire [7 : 0] m_axis_tkeep
-  .m_axis_tlast(ptr_m_axis_read_tlast),      // output wire m_axis_tlast
+  .m_axis_tlast(ptr_m_axis_read_tlast)//,      // output wire m_axis_tlast
   
-  .axis_data_count(),        // output wire [31 : 0] axis_data_count
-  .axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
-  .axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
+  //.axis_data_count(),        // output wire [31 : 0] axis_data_count
+  //.axis_wr_data_count(),  // output wire [31 : 0] axis_wr_data_count
+  //.axis_rd_data_count()  // output wire [31 : 0] axis_rd_data_count
 );
 
 wire bmap_s_buf_read_cmd_tvalid;

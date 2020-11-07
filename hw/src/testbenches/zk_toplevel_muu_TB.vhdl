@@ -29,13 +29,15 @@ end zk_toplevel_muu_TB;
 architecture bench of zk_toplevel_muu_TB is
 
    --component zookeeper_tcp_top_parallel_nkv
-  component muu_TopWrapper 
+  component muu_TopWrapper_fclk 
   generic (
        IS_SIM : integer := 0 
     );
     port (
       aclk : in std_logic;
       aresetn : in std_logic;
+      
+      fclk : in std_logic;
       
       m_axis_open_connection_TVALID : out std_logic;
       m_axis_open_connection_TREADY : in std_logic;
@@ -263,6 +265,7 @@ architecture bench of zk_toplevel_muu_TB is
 end component;
 
   signal clk: std_logic := '0';
+  signal fclk: std_logic := '0';
   signal clk200: std_logic := '1';
   signal rst: std_logic := '1';
   signal rstX: std_logic := '1';
@@ -383,10 +386,11 @@ begin
 
   
   --  uut: zookeeper_tcp_top_parallel_nkv
-    uut: muu_TopWrapper 
+    uut: muu_TopWrapper_fclk 
     generic map ( IS_SIM => 1 )
     port map ( aclk           => clk,
 	       aresetn        => rstn,
+	       fclk => fclk,
 	       
 	       m_axis_open_connection_TVALID => openConnReqValid,
 	       m_axis_open_connection_TREADY =>  '1',
@@ -647,6 +651,7 @@ mockmem_bitmap : entity work.kvs_tbDRAM_Module
   rst <= '0' after 400ns;
   rstX <= '0' after 400ns;
   clk <= not clk after 3.2ns;
+  fclk <= not fclk after 1.6ns;
   clk200 <= not clk200 after 1.6ns;
 
   stim_event: process

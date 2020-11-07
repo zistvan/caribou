@@ -336,7 +336,7 @@ end
 assign ip_address_out = iph_ip_address;
 
 
-shortcut_to_ip_201801 toe_inst (
+shortcut_toe_NODELAY_ip toe_inst (
 // Data output
 .m_axis_tcp_data_TVALID(axi_toe_to_toe_slice_tvalid), // output AXI_M_Stream_TVALID
 .m_axis_tcp_data_TREADY(axi_toe_to_toe_slice_tready), // input AXI_M_Stream_TREADY
@@ -479,7 +479,7 @@ shortcut_to_ip_201801 toe_inst (
 .m_axis_tx_data_rsp_TREADY(m_axis_tx_status_TREADY),
 .m_axis_tx_data_rsp_TDATA(m_axis_tx_status_TDATA),
 
-.myIpAddress_V(toe_ip_address),
+.regIpAddress_V(toe_ip_address),
 .regSessionCount_V(regSessionCount_V),
 .regSessionCount_V_ap_vld(regSessionCount_V_ap_vld),
 `ifdef RX_DDR_BYPASS
@@ -506,7 +506,7 @@ axis_data_fifo_64_d2048 rx_buffer_fifo (
   .m_axis_tdata(axis_rxbuffer2app_tdata),
   .m_axis_tkeep(axis_rxbuffer2app_tkeep),
   .m_axis_tlast(axis_rxbuffer2app_tlast),
-  .axis_data_count(rx_buffer_data_count[11:0])
+  .axis_rd_data_count(rx_buffer_data_count[11:0])
 );
 assign rx_buffer_data_count[31:12] = 20'h0;
 `endif
@@ -677,7 +677,7 @@ ip_handler_ip ip_handler_inst (
 .s_axis_raw_TKEEP(AXI_S_Stream_TKEEP), // input [7 : 0] AXI4Stream_S_TSTRB
 .s_axis_raw_TLAST(AXI_S_Stream_TLAST), // input [0 : 0] AXI4Stream_S_TLAST
 
-.myIpAddress_V(iph_ip_address),
+.regIpAddress_V(iph_ip_address),
 
 .aclk(aclk), // input aclk
 .aresetn(aresetn) // input aresetn
@@ -806,8 +806,8 @@ arp_server_subnet_ip arp_server_inst(
 .s_axis_arp_lookup_request_TREADY(axis_arp_lookup_request_TREADY),
 .s_axis_arp_lookup_request_TDATA(axis_arp_lookup_request_TDATA),
 
-.myMacAddress_V(arp_mac_address),
-.myIpAddress_V(arp_ip_address),
+.regMacAddress_V(arp_mac_address),
+.regIpAddress_V(arp_ip_address),
 
 .aclk(aclk), // input aclk
 .aresetn(aresetn) // input aresetn
