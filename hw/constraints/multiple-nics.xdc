@@ -1,11 +1,11 @@
 create_clock -period 5.000 -name mcb_clk_ref [get_ports clk_ref_p]
 
 
-# Bank: 38 - Byte 
+# Bank: 38 - Byte
 set_property VCCAUX_IO DONTCARE [get_ports clk_ref_p]
 set_property IOSTANDARD DIFF_SSTL15 [get_ports clk_ref_p]
 
-# Bank: 38 - Byte 
+# Bank: 38 - Byte
 set_property VCCAUX_IO DONTCARE [get_ports clk_ref_n]
 set_property IOSTANDARD DIFF_SSTL15 [get_ports clk_ref_n]
 set_property PACKAGE_PIN H19 [get_ports clk_ref_p]
@@ -55,7 +55,7 @@ create_clock -name refclk -period 6.400 [get_pins n10g_interface_inst/xgphy_refc
 
 set_false_path -hold -from [get_pins nkv_TopWrapper/nukvs_instance/rst_regd_reg/C] -to [get_pins nkv_TopWrapper/nukvs_instance/frst_reg/D]
 
-#create_generated_clock -name clkfast_buf -source [get_pins nkv_TopWrapper/nukvs_instance/PLLE2_BASE_inst/CLKOUT0] [get_pins nkv_TopWrapper/nukvs_instance/fast_clock_bufg_inst/O] 
+#create_generated_clock -name clkfast_buf -source [get_pins nkv_TopWrapper/nukvs_instance/PLLE2_BASE_inst/CLKOUT0] [get_pins nkv_TopWrapper/nukvs_instance/fast_clock_bufg_inst/O]
 
 # Needed by SmartCam
 #create_clock -name clkout0 -period 6.400 [get_pins SmartCamCtl_inst/clk_u/clkout1_buf/O]
@@ -247,38 +247,24 @@ set_property LOC AT36 [get_ports si5324_rst_n]
 
 
 #Domain crossing constraints
-set_clock_groups -name async_mcb_xgemac -asynchronous \
-  -group [get_clocks  mcb_clk_ref] \
-  -group [get_clocks  clk156]
+set_clock_groups -name async_mcb_xgemac -asynchronous -group [get_clocks  mcb_clk_ref] -group [get_clocks  clk156]
 
 
 
-set_clock_groups -name async_mig_ref_clk50 -asynchronous \
-   -group [get_clocks mcb_clk_ref] \
-   -group [get_clocks clk50]
+set_clock_groups -name async_mig_ref_clk50 -asynchronous -group [get_clocks mcb_clk_ref] -group [get_clocks clk50]
 
 
-#set_clock_groups -name async_rxusrclk_xgemac -asynchronous \
-#  -group [get_clocks  xphy_rxusrclkout?] \
-#  -group [get_clocks  clk156]
+#set_clock_groups -name async_rxusrclk_xgemac -asynchronous #  -group [get_clocks  xphy_rxusrclkout?] #  -group [get_clocks  clk156]
 
-#set_clock_groups -name async_txusrclk_xgemac -asynchronous \
-#  -group [get_clocks  xphy_txusrclkout?] \
-#  -group [get_clocks  clk156]
+#set_clock_groups -name async_txusrclk_xgemac -asynchronous #  -group [get_clocks  xphy_txusrclkout?] #  -group [get_clocks  clk156]
 
-#  set_clock_groups -name async_txusrclk_refclk -asynchronous \
-#    -group [get_clocks  xphy_txusrclkout?] \
-#    -group [get_clocks  -include_generated_clocks refclk]
+#  set_clock_groups -name async_txusrclk_refclk -asynchronous #    -group [get_clocks  xphy_txusrclkout?] #    -group [get_clocks  -include_generated_clocks refclk]
 
 
-set_clock_groups -name async_xgemac_drpclk -asynchronous \
-   -group [get_clocks -include_generated_clocks clk156] \
-   -group [get_clocks -include_generated_clocks dclk]
-   
-set_clock_groups -name async_xgemac_clk50 -asynchronous \
-   -group [get_clocks -include_generated_clocks clk156] \
-   -group [get_clocks clk50]
-   
+set_clock_groups -name async_xgemac_drpclk -asynchronous -group [get_clocks -include_generated_clocks clk156] -group [get_clocks -include_generated_clocks dclk]
+
+set_clock_groups -name async_xgemac_clk50 -asynchronous -group [get_clocks -include_generated_clocks clk156] -group [get_clocks clk50]
+
 ####contraints from DRAM MEM inf
 create_clock -period 4.285 -name sys_clk_233 [get_ports sys_clk_p]
 
@@ -286,12 +272,12 @@ set_property VCCAUX_IO DONTCARE [get_ports {sys_clk_p}]
 set_property IOSTANDARD DIFF_SSTL15 [get_ports {sys_clk_p}]
 set_property PACKAGE_PIN AY18 [get_ports {sys_clk_p}]
 
-# Bank: 32 - Byte 
+# Bank: 32 - Byte
 set_property VCCAUX_IO DONTCARE [get_ports {sys_clk_n}]
 set_property IOSTANDARD DIFF_SSTL15 [get_ports {sys_clk_n}]
 set_property PACKAGE_PIN AY17 [get_ports {sys_clk_n}]
 
-# PadFunction: IO_L13P_T2_MRCC_15 
+# PadFunction: IO_L13P_T2_MRCC_15
 set_property VCCAUX_IO DONTCARE [get_ports {sys_rst}]
 set_property IOSTANDARD LVCMOS18 [get_ports {sys_rst}]
 set_property PACKAGE_PIN AV40 [get_ports {sys_rst}]
@@ -305,9 +291,7 @@ set_clock_groups -name clk156_pll_i_1 -asynchronous -group [get_clocks clk_pll_i
 
 #set_false_path -from [get_cells n10g_interface_inst/xgbaser_gt_wrapper_inst/reset_pulse_reg[0]]
 
-#set_clock_groups -name async_ref_sys_clk -asynchronous \
-#    -group [get_clocks  sys_clk233] \
-#    -group [get_clocks  mcb_clk_ref]
+#set_clock_groups -name async_ref_sys_clk -asynchronous #    -group [get_clocks  sys_clk233] #    -group [get_clocks  mcb_clk_ref]
 
 #set_false_path -from [get_cells rst_n_r3_reg__0]
 #set_false_path -from [get_cells reset156_25_n_r3_reg__0]
@@ -331,9 +315,10 @@ set_clock_groups -name clk156_pll_i_1 -asynchronous -group [get_clocks clk_pll_i
 #set_property PACKAGE_PIN B8 [get_ports sata1_rx_p]
 #set_property PACKAGE_PIN B7 [get_ports sata1_rx_n]
 
-#create_clock -name GT0_GTREFCLK0_IN -period 6.667 [get_pins ssd_module/sata_gth_inst/sata3_gth_inst/inst/genClk150x/clk_out1] 
+#create_clock -name GT0_GTREFCLK0_IN -period 6.667 [get_pins ssd_module/sata_gth_inst/sata3_gth_inst/inst/genClk150x/clk_out1]
 
 ################################## mgt wrapper constraints #####################
 
 ###---------- Set placement for gt0_gth_wrapper_i/GTHE2_CHANNEL ------
 #set_property LOC GTHE2_CHANNEL_X1Y38 [get_cells ssd_module/sata_gth_inst/sata3_gth_inst/inst/gtwizard_0_init_i/gtwizard_0_i/gt0_gtwizard_0_i/gthe2_i]
+

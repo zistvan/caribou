@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2019 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2020 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,8 +46,8 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:xxv_ethernet:2.4
-// IP Revision: 1
+// IP VLNV: xilinx.com:ip:xxv_ethernet:3.2
+// IP Revision: 0
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
@@ -127,10 +127,15 @@ ethernet_ip your_instance_name (
   .stat_rx_packet_8192_9215_bytes_0(stat_rx_packet_8192_9215_bytes_0),  // output wire stat_rx_packet_8192_9215_bytes_0
   .stat_rx_packet_small_0(stat_rx_packet_small_0),                      // output wire stat_rx_packet_small_0
   .stat_rx_packet_large_0(stat_rx_packet_large_0),                      // output wire stat_rx_packet_large_0
+  .stat_rx_unicast_0(stat_rx_unicast_0),                                // output wire stat_rx_unicast_0
+  .stat_rx_multicast_0(stat_rx_multicast_0),                            // output wire stat_rx_multicast_0
+  .stat_rx_broadcast_0(stat_rx_broadcast_0),                            // output wire stat_rx_broadcast_0
   .stat_rx_oversize_0(stat_rx_oversize_0),                              // output wire stat_rx_oversize_0
   .stat_rx_toolong_0(stat_rx_toolong_0),                                // output wire stat_rx_toolong_0
   .stat_rx_undersize_0(stat_rx_undersize_0),                            // output wire stat_rx_undersize_0
   .stat_rx_fragment_0(stat_rx_fragment_0),                              // output wire stat_rx_fragment_0
+  .stat_rx_vlan_0(stat_rx_vlan_0),                                      // output wire stat_rx_vlan_0
+  .stat_rx_inrangeerr_0(stat_rx_inrangeerr_0),                          // output wire stat_rx_inrangeerr_0
   .stat_rx_jabber_0(stat_rx_jabber_0),                                  // output wire stat_rx_jabber_0
   .stat_rx_bad_code_0(stat_rx_bad_code_0),                              // output wire stat_rx_bad_code_0
   .stat_rx_bad_sfd_0(stat_rx_bad_sfd_0),                                // output wire stat_rx_bad_sfd_0
@@ -166,6 +171,10 @@ ethernet_ip your_instance_name (
   .stat_tx_packet_8192_9215_bytes_0(stat_tx_packet_8192_9215_bytes_0),  // output wire stat_tx_packet_8192_9215_bytes_0
   .stat_tx_packet_small_0(stat_tx_packet_small_0),                      // output wire stat_tx_packet_small_0
   .stat_tx_packet_large_0(stat_tx_packet_large_0),                      // output wire stat_tx_packet_large_0
+  .stat_tx_unicast_0(stat_tx_unicast_0),                                // output wire stat_tx_unicast_0
+  .stat_tx_multicast_0(stat_tx_multicast_0),                            // output wire stat_tx_multicast_0
+  .stat_tx_broadcast_0(stat_tx_broadcast_0),                            // output wire stat_tx_broadcast_0
+  .stat_tx_vlan_0(stat_tx_vlan_0),                                      // output wire stat_tx_vlan_0
   .stat_tx_frame_error_0(stat_tx_frame_error_0),                        // output wire stat_tx_frame_error_0
   .ctl_tx_enable_0(ctl_tx_enable_0),                                    // input wire ctl_tx_enable_0
   .ctl_tx_send_rfi_0(ctl_tx_send_rfi_0),                                // input wire ctl_tx_send_rfi_0
@@ -181,7 +190,8 @@ ethernet_ip your_instance_name (
   .ctl_tx_test_pattern_seed_b_0(ctl_tx_test_pattern_seed_b_0),          // input wire [57 : 0] ctl_tx_test_pattern_seed_b_0
   .ctl_tx_ipg_value_0(ctl_tx_ipg_value_0),                              // input wire [3 : 0] ctl_tx_ipg_value_0
   .ctl_tx_custom_preamble_enable_0(ctl_tx_custom_preamble_enable_0),    // input wire ctl_tx_custom_preamble_enable_0
-  .gt_loopback_in_0(gt_loopback_in_0)                                  // input wire [2 : 0] gt_loopback_in_0
+  .gt_loopback_in_0(gt_loopback_in_0),                                  // input wire [2 : 0] gt_loopback_in_0
+  .qpllreset_in_0(qpllreset_in_0)                                      // input wire qpllreset_in_0
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 

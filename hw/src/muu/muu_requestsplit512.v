@@ -72,6 +72,7 @@ reg [7:0] peerid;
 reg [7:0] keylen;
 reg [15:0] loadlen;
 wire [15:0] vallen;
+wire [15:0] vallenx8;
 reg [15:0] valleft;
 reg [7:0] partialpos = VALUE_WIDTH/64;
 
@@ -84,6 +85,7 @@ assign outready = meta_ready & key_ready & value_ready;
 assign readyfornew = meta_ready & key_ready & value_ready & ~value_almost_full;
 
 assign vallen = (loadlen==0) ? 0 : loadlen - keylen;
+assign vallenx8 = {vallen,3'b000};
 
 assign opcode_i = s_axis_tdata[24 +: 8];
 
@@ -174,7 +176,7 @@ always @ (posedge clk)
 			ST_META2: begin
 				if (s_axis_tvalid==1) begin // && s_axis_tready==1) begin
 
-					meta_data <= {userid,4'b0000,opcode[3:0],opcode,s_axis_tdata[47:32],s_axis_tdata[31:0],peerid,keylen,vallen,net_meta};
+					meta_data <= {userid,4'b0000,opcode[3:0],opcode,s_axis_tdata[47:32],s_axis_tdata[31:0],peerid,keylen,vallenx8,net_meta};
 					//			   :160	 159:156 155:152    151:144 		143:128			127:96	        95:88 87:80  79:64	  63:0
 					meta_valid <= 1;
 

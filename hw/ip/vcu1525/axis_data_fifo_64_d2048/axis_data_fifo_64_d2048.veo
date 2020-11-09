@@ -1,4 +1,4 @@
-// (c) Copyright 1995-2019 Xilinx, Inc. All rights reserved.
+// (c) Copyright 1995-2020 Xilinx, Inc. All rights reserved.
 // 
 // This file contains confidential and proprietary information
 // of Xilinx, Inc. and is protected under U.S. and
@@ -46,8 +46,8 @@
 // 
 // DO NOT MODIFY THIS FILE.
 
-// IP VLNV: xilinx.com:ip:axis_data_fifo:1.1
-// IP Revision: 18
+// IP VLNV: xilinx.com:ip:axis_data_fifo:2.0
+// IP Revision: 3
 
 // The following must be inserted into your Verilog file for this
 // core to be instantiated. Change the instance name and port connections
@@ -67,7 +67,6 @@ axis_data_fifo_64_d2048 your_instance_name (
   .m_axis_tdata(m_axis_tdata),              // output wire [63 : 0] m_axis_tdata
   .m_axis_tkeep(m_axis_tkeep),              // output wire [7 : 0] m_axis_tkeep
   .m_axis_tlast(m_axis_tlast),              // output wire m_axis_tlast
-  .axis_data_count(axis_data_count),        // output wire [31 : 0] axis_data_count
   .axis_wr_data_count(axis_wr_data_count),  // output wire [31 : 0] axis_wr_data_count
   .axis_rd_data_count(axis_rd_data_count)  // output wire [31 : 0] axis_rd_data_count
 );

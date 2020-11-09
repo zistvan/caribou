@@ -363,7 +363,8 @@ always @(posedge clk) begin
 
 					if (hasvalue==1 && toread>0 && dropit==0) begin
 						if (is_forme==1) begin
-							state <= ST_VALUE;					
+							state <= ST_VALUE;	
+							idx <= 7;				
 						end else begin
 							state <= ST_KEY_REPL;					
 						end
@@ -402,7 +403,7 @@ always @(posedge clk) begin
 
 					//if (idx==7) begin
 						toread <= toread-8;
-						idx <= 0;
+						idx <= 7;
 					//end
 
 					output_valid <= 1;
@@ -431,11 +432,14 @@ always @(posedge clk) begin
 					output_word[127:64] <= key_data;
 										
 					state <= ST_VALUE_REPL;
+					idx<=7;
 				end
 			end					
 
 			ST_VALUE_REPL: begin
 				if (output_ready==1 && repl_in_valid==1) begin
+
+					toread <= toread-8;					
 
 					first_value_word <= 0;
 					
