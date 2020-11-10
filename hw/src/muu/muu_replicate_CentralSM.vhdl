@@ -215,6 +215,7 @@ architecture beh of muu_replicate_CentralSM is
 	signal myZxid       : UaZxid;
 	signal preloadMyZxid : std_logic_vector(CMD_ZXID_LEN-1 downto 0);
 	signal proposedZxid : Ua32;
+	signal preloadProposedZxid : std_logic_vector(CMD_ZXID_LEN-1 downto 0);
 	signal myEpoch      : UaEpoch;
 	signal preloadMyEpoch : std_logic_Vector(CMD_EPOCH_LEN-1 downto 0);
 	signal myIPAddr     : Ua32;
@@ -362,6 +363,13 @@ architecture beh of muu_replicate_CentralSM is
 		);
 	end component;
 
+	signal isMyPhaseStartup : std_logic;
+	signal isMyPhaseNormal : std_logic;
+	signal isMyPhaseElection : std_logic;
+
+	signal isMyRoleFollower : std_logic;
+	signal isMyRoleLeader : std_logic;
+
 begin
 	cmd_in_ready <= inCmdReady;
 
@@ -384,6 +392,15 @@ begin
 	sync_getready <= syncPrepare;
 
 	dead_mode <= isDead;
+
+	isMyPhaseStartup <= '1' when (myPhase(conv_integer(inCmdUser_I)) = PH_STARTUP) else '0';
+	isMyPhaseElection <= '1' when (myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION) else '0';
+    isMyPhaseNormal <= '1' when (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL) else '0';
+
+    isMyRoleLeader <= '1' when (myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) else '0';
+    isMyRoleFollower <= '1' when (myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER) else '0';
+
+
 
  
 	main : process(clk)
@@ -563,7 +580,7 @@ begin
 								when (OPCODE_SETUPPEER) =>
 									traceLoc <= "00000010";
 
-									if (myRole(conv_integer(inCmdUser_I)) = ROLE_UNKNOWN and myPhase(conv_integer(inCmdUser_I)) = PH_STARTUP and inCmdPeerId_I /= 0) then
+									if (isMyRoleFollower='0' and isMyRoleLeader='0' and isMyPhaseStartup='1' and inCmdPeerId_I /= 0) then
 										myState    <= ST_HANDLEOP;
 										inCmdReady <= '0';
 									else
@@ -575,7 +592,7 @@ begin
 								when (OPCODE_SETLEADER) =>
 									traceLoc <= "00000011";
 
-									if (((myRole(conv_integer(inCmdUser_I)) = ROLE_UNKNOWN and myPhase(conv_integer(inCmdUser_I)) = PH_STARTUP) or myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION) and inCmdPeerId_I /= 0 and myPeerId(conv_integer(inCmdUser_I)) /= 0 and inCmdEpoch_I = 0) then
+									if (((isMyRoleFollower='0' and isMyRoleLeader='0' and isMyPhaseStartup='1') or isMyPhaseElection='1') and inCmdPeerId_I /= 0 and myPeerId(conv_integer(inCmdUser_I)) /= 0 and inCmdEpoch_I = 0) then
 										myState    <= ST_HANDLEOP;
 										inCmdReady <= '0';
 									else
@@ -587,7 +604,7 @@ begin
 								when (OPCODE_ADDPEER) =>
 									traceLoc <= "00000100";
 
-									if ((myPhase(conv_integer(inCmdUser_I)) = PH_STARTUP or myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) and inCmdPeerId_I /= myPeerId(conv_integer(inCmdUser_I)) and (inCmdEpoch_I /= 0 or inCmdZxid_I /= 0)) then
+									if ((isMyPhaseStartup='1' or isMyRoleLeader='1') and inCmdPeerId_I /= myPeerId(conv_integer(inCmdUser_I)) and (inCmdEpoch_I /= 0 or inCmdZxid_I /= 0)) then
 										myState    <= ST_HANDLEOP;
 										preloadPeerCount <= peerCount(conv_integer(inCmdUser_I));
 										inCmdReady <= '0';
@@ -603,7 +620,7 @@ begin
 								-- SET THE NUMBER OF PEERS USED FOR COMPUTING MAJORITY
 								when (OPCODE_SETCOMMITCNT) =>
 									traceLoc <= "00000101";
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) then
+									if (isMyPhaseNormal='1' and isMyRoleLeader='1') then
 										peerCountForCommit(conv_integer(inCmdUser_I)) <= inCmdEpoch_I(PEER_BITS-1 downto 0);
 
 									else
@@ -625,7 +642,7 @@ begin
 								-- WRITE REQUEST
 								when (OPCODE_WRITEREQ) =>
 									traceLoc <= "00000111";
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) then
+									if (isMyPhaseNormal='1' and isMyRoleLeader='1') then
 										-- if I am the leader, I need to 1) add the request to the
 										-- log, 2) send out proposals to the peers 3) wait for acks
 										-- from them, and finally commit. The acks are handled "in
@@ -671,7 +688,7 @@ begin
 									thisPeersAckedZxid <= peerZxidAck(conv_integer(inCmdUser_I(USER_BITS - 1 downto 0) & inCmdPeerId_I(PEER_BITS - 1 downto 0)));
   									thisPeersCmtdZxid  <= peerZxidCmt(conv_integer(inCmdUser_I(USER_BITS - 1 downto 0) & inCmdPeerId_I(PEER_BITS - 1 downto 0)));
 
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and proposedZxid(conv_integer(inCmdUser_I)) >= inCmdZxid_I) then										
+									if (isMyPhaseNormal='1' and isMyRoleLeader='1' and proposedZxid(conv_integer(inCmdUser_I)) >= inCmdZxid_I) then										
 										
 										if (peerZxidAck(conv_integer(inCmdUser_I(USER_BITS - 1 downto 0) & inCmdPeerId_I(PEER_BITS - 1 downto 0))) + 1 = inCmdZxid_I) then
 											myState    <= ST_HANDLEOP;
@@ -688,10 +705,13 @@ begin
 
 								when (OPCODE_SYNCREQ) =>
 									traceLoc <= "00001001";
-									if ((myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER and proposedZxid(conv_integer(inCmdUser_I)) >= inCmdZxid_I) or (myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER)) then
-										myState <= ST_HANDLEOP;
-										inCmdReady <= '0';
 
+									preloadMyZxid <= myZxid(conv_integer(inCmdUser_I));	
+									preloadProposedZxid <= proposedZxid(conv_integer(inCmdUser_I));
+
+									if ((isMyPhaseNormal='1' and isMyRoleLeader='1' and proposedZxid(conv_integer(inCmdUser_I)) >= inCmdZxid_I) or (isMyRoleFollower='1')) then
+										myState <= ST_HANDLEOP;
+										inCmdReady <= '0';										
 									else
 										error_valid  <= '1';
 										error_opcode <= proposedZxid(conv_integer(inCmdUser_I))(7 downto 0); -- & inCmdOpCode(3 downto 0);
@@ -704,7 +724,7 @@ begin
 									preloadMyZxid <= myZxid(conv_integer(inCmdUser_I));
 									preloadMyEpoch <= myEpoch(conv_integer(inCmdUser_I));
 
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
+									if (isMyPhaseNormal='1' and isMyRoleFollower='1' and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
 
 										myState <= ST_HANDLEOP;
 										inCmdReady <= '0';
@@ -716,7 +736,7 @@ begin
 
 								when (OPCODE_SYNCRESP) =>
 									traceLoc <= "00001011";
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
+									if (isMyPhaseNormal='1' and isMyRoleFollower='1' and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
 										if (inCmdZxid_I = myZxid(conv_integer(inCmdUser_I)) + 1 and inCmdEpoch_I = myEpoch(conv_integer(inCmdUser_I))) then
 											myState    <= ST_HANDLEOP;
 											inCmdReady <= '0';
@@ -733,7 +753,7 @@ begin
 
 								when (OPCODE_COMMIT) =>
 									traceLoc <= "00001100";
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
+									if (isMyPhaseNormal='1' and isMyRoleFollower='1' and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
 										if (inCmdZxid_I <= myZxid(conv_integer(inCmdUser_I)) and inCmdEpoch_I = myEpoch(conv_integer(inCmdUser_I))) then
 											log_search_valid <= '1';
 											log_search_since <= '0';
@@ -788,7 +808,7 @@ begin
 
 								when (OPCODE_SYNCLEADER) =>
 									traceLoc <= "00010000";
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_SYNC and myRole(conv_integer(inCmdUser_I)) = ROLE_LEADER) then
+									if (myPhase(conv_integer(inCmdUser_I)) = PH_SYNC and isMyRoleLeader='1') then
 										myState    <= ST_HANDLEOP;
 										inCmdReady <= '0';
 
@@ -803,7 +823,7 @@ begin
 								when (OPCODE_SYNCDRAM) =>
 									traceLoc <= "11001100";
 
-									if (myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL and myRole(conv_integer(inCmdUser_I)) = ROLE_FOLLOWER and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
+									if (isMyPhaseNormal='1' and isMyRoleFollower='1' and leaderPeerId(conv_integer(inCmdUser_I)) = inCmdPeerId_I) then
 										myState    <= ST_HANDLEOP;
 										inCmdReady <= '0';
 
@@ -842,7 +862,7 @@ begin
 							end case;
 
 						else
-							if ((myPhase(conv_integer(inCmdUser_I)) = PH_NORMAL or myPhase(conv_integer(inCmdUser_I)) = PH_ELECTION) and sinceHeardFromLeader(conv_integer(inCmdUser_I)) > silenceThreshold(conv_integer(inCmdUser_I)) and silenceMeasured(conv_integer(inCmdUser_I)) = '1') then
+							if ((isMyPhaseNormal='1' or isMyPhaseElection='1') and sinceHeardFromLeader(conv_integer(inCmdUser_I)) > silenceThreshold(conv_integer(inCmdUser_I)) and silenceMeasured(conv_integer(inCmdUser_I)) = '1') then
 								-- we need to send the next epoch to the prospective leader -- the next in the order.
 
 								myState <= ST_TIMEOUT_LEADER;
@@ -1072,10 +1092,10 @@ begin
 								preloadSyncZxid <= inCmdZxid;							
 
 								if (myRole(conv_integer(inCmdUser)) = ROLE_FOLLOWER) then
-									proposedZxid(conv_integer(inCmdUser)) <= myZxid(conv_integer(inCmdUser));
+									proposedZxid(conv_integer(inCmdUser)) <= preloadMyZxid;
 								end if;
 
-								if (proposedZxid(conv_integer(inCmdUser)) - inCmdZxid < 128) then
+								if (preloadProposedZxid - inCmdZxid < 128) then
 									myState    <= ST_GETLOGSYNC;
 									inCmdReady <= '0';
 								else
@@ -1515,7 +1535,7 @@ begin
 						end if;
 
 						if (sessMemEnableD2 = '1') then
-							if (myZxid(conv_integer(inCmdUser)) + 1 = inCmdZxid) then
+							if (preloadMyZxid + 1 = inCmdZxid) then
 								myZxid(conv_integer(inCmdUser)) <= inCmdZxid;
 
 								--	if (clientReqZxid(ieee.numeric_std.to_integer(ieee.numeric_std.unsigned(sendZxid(MAX_OUTSTANDING_REQS_BITS-1 downto 0))))=inCmdZxid(15 downto 0)) then
@@ -1643,6 +1663,8 @@ begin
 
 					when ST_CHKQRM_ACKS_2 =>
 
+						preloadMyZxid <= myZxid(conv_integer(inCmdUser));
+
 						--for majority need to add 1 to the peercount to count	      
 						--ZSOLT
 						if ((preloadPeerCount > 2 and commitableCountTimesTwo >= (preloadPeerCountForCommit))
@@ -1665,7 +1687,7 @@ begin
 
 							if (commitableCount = 1 and flagLate='1') then
 								returnState <= ST_FINISH_COMMIT_LATE;
-							else
+							else								
 								returnState <= ST_FINISH_COMMIT;
 							end if;
 
@@ -1702,7 +1724,7 @@ begin
 
 						myState    <= ST_WAITOP;
 						inCmdReady <= '1';
-
+					
 					when ST_GETLOGSYNC =>
 						traceLoc         <= "00011010";
 						log_search_valid <= '1';
